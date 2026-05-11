@@ -1,0 +1,23 @@
+# 빌드 결과물
+.vs/
+Debug/
+Release/
+x64/
+x86/
+*.user
+*.suo
+*.pdb
+*.ilk
+*.obj
+
+# NuGet 패키지
+packages/
+*.nupkg
+
+# 에셋 파일 
+Asset/Models/*
+Asset/Textures/*
+
+# 파일 구조 유지
+!Asset/Models/.gitkeep
+!Asset/Textures/.gitkeep
