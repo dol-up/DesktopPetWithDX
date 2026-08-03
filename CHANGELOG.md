@@ -33,7 +33,5 @@
 
 ### 주의사항
 
-- `Asset/Models`와 `Asset/Textures`의 실제 에셋은 저작권 및 배포 제한 때문에 Git에서 제외됩니다. 디렉터리 유지용 `.gitkeep`만 추적합니다.
-- George, Leela, Mike, Stan 외의 모델은 GitHub에 업로드하지 않습니다. 현재는 안전을 위해 허용 모델을 포함한 모든 실제 모델 파일을 무시합니다.
 - `last_model.txt`에는 로컬 절대 경로가 기록되므로 Git에서 제외합니다.
 - 투명 재질은 픽셀 셰이더에서 RGB에 알파를 미리 곱하고, `ONE / INV_SRC_ALPHA` 색상 블렌딩과 목적지 알파 누적을 사용합니다.
