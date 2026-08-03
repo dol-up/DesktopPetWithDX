@@ -8,6 +8,7 @@ public:
     DirectX::XMMATRIX GetViewMatrix() const;
     DirectX::XMMATRIX GetProjectionMatrix() const;
 
+
 private:
     DirectX::XMVECTOR position;
     DirectX::XMVECTOR focus;

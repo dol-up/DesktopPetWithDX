@@ -16,7 +16,7 @@
 
 class Graphics {
 public:
-    Graphics(HWND hWnd, int width, int height);
+    Graphics(HWND hWnd, int width, int height, const std::string& initialModelPath);
     ~Graphics();
 
     // 복사 방지
@@ -24,6 +24,9 @@ public:
     Graphics& operator=(const Graphics&) = delete;
 
     void Render();
+
+    void LoadNewModel(const std::string& filePath);
+
 
 private:
     // 다이렉트X 핵심 인터페이스 4인방

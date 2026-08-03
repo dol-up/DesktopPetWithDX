@@ -15,6 +15,9 @@ public:
     bool ProcessMessages();
     HWND GetHWND() const { return hWnd; }
 
+
+
+
 private:
     static LRESULT CALLBACK WindowProcSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK WindowProcForward(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
