@@ -25,7 +25,7 @@ Window::Window(int width, int height, const char* name)
 	DWORD dwStyle = WS_POPUP;  //WS_OVERLAPPEDWINDOW
 	DWORD dwExStyle = WS_EX_TOPMOST; // 항상 위, 투명도 지원
 
-	// 윈도우 생성
+	// 윈도우 생성q
 	hWnd = CreateWindowEx(
 		dwExStyle, name, name, dwStyle,
 		0, 0, width, height,
@@ -145,11 +145,11 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		int mouseX = (int)(short)LOWORD(lParam);
 		int mouseY = (int)(short)HIWORD(lParam);
 
-		// 2. 창의 위치와 크기를 가져옴
+		// 창의 위치와 크기를 가져옴
 		RECT rc;
 		GetWindowRect(hWnd, &rc);
 
-		// 3. 마우스 좌표를 '우리 창의 내부' 좌표(0~width, 0~height)로 변환
+		// 마우스 좌표를 '우리 창의 내부' 좌표(0~width, 0~height)로 변환
 		int localX = mouseX - rc.left;
 		int localY = mouseY - rc.top;
 
@@ -162,11 +162,11 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		int dy = localY - centerY;
 		int distanceSquared = (dx * dx) + (dy * dy);
 
-		// 6. 충돌 판정! (반지름 150픽셀짜리 원 안에 마우스가 들어왔는가?)
+		// 충돌 판정! (반지름 150픽셀짜리 원 안에 마우스가 들어왔는가?)
 		int radius = 150;
 
 		if (distanceSquared < (radius * radius)) {
-			// [모델 영역 적중!] "여긴 내 구역이야! 클릭을 허락한다!"
+			// 모델 영역 적중!
 			return HTCLIENT;
 		}
 		else {
@@ -179,3 +179,6 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 
 }
+
+
+

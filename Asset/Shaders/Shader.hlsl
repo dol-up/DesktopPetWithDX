@@ -2,6 +2,11 @@ cbuffer TransformBuffer : register(b0) {
     matrix transform;
 };
 
+cbuffer MaterialBuffer : register(b0) {
+    int hasTexture;
+    float3 padding;
+};
+
 Texture2D objTexture : register(t0);
 SamplerState objSampler : register(s0);
 
@@ -27,15 +32,20 @@ PS_IN VSMain(VS_IN input) {
 }
 
 // 픽셀 셰이더 (Pixel Shader)
-float4 PSMain(PS_IN input) : SV_TARGET{
-    //  색상과 투명도 뽑아오기
-    float4 texColor = objTexture.Sample(objSampler, input.uv);
+float4 PSMain(PS_IN input) : SV_TARGET
+{
+    float4 texColor;
 
-    clip(texColor.a - 0.1f);
+    if (hasTexture == 1) {
+        texColor = objTexture.Sample(objSampler, input.uv);
 
-    texColor.a = 1.0f;
+        clip(texColor.a - 0.1f);
+        texColor.rgb *= texColor.a;
+
+        return texColor;
+    } else {
+        texColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    }
 
     return texColor;
-
-    //알파 블렌딩 꼭 넣어야함 ㅁㅊ
 }

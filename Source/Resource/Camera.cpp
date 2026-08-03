@@ -2,7 +2,7 @@
 
 Camera::Camera(float windowWidth, float windowHeight) {
     // 카메라 초기 위치
-    position = DirectX::XMVectorSet(0.0f, 0.5f, -3.5f, 1.0f);
+    position = DirectX::XMVectorSet(0.0f, 0.0f, -3.5f, 1.0f);
     focus = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
     up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 

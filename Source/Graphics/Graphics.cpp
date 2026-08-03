@@ -7,7 +7,7 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
-Graphics::Graphics(HWND hWnd, int width, int height) {
+Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialModelPath) {
     // 디바이스 및 스왑 체인 생성
     DXGI_SWAP_CHAIN_DESC sd = {};
     sd.BufferDesc.Width = width;
@@ -61,7 +61,7 @@ Graphics::Graphics(HWND hWnd, int width, int height) {
 
     device->CreateBuffer(&cbd, nullptr, &constantBuffer);
 
-    model = std::make_unique<Model>(device.Get(), context.Get(), "Asset/Models/");
+    model = std::make_unique<Model>(device.Get(), context.Get(), initialModelPath);
     shader = std::make_unique<Shader>(device.Get(), hWnd, L"Asset/Shaders/Shader.hlsl");
     camera = std::make_unique<Camera>((float)width, (float)height);
 
@@ -99,11 +99,11 @@ Graphics::Graphics(HWND hWnd, int width, int height) {
     // 알파 블렌딩을 위한 사전 작업
     D3D11_BLEND_DESC blendDesc = {};
     blendDesc.RenderTarget[0].BlendEnable = TRUE;
-    blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
     blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
     blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
     blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-    blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
     blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
     blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
@@ -117,29 +117,43 @@ void Graphics::Render() {
     context->ClearRenderTargetView(renderTargetView.Get(), clearColor);
     context->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    // 1. 행렬 계산
     rotationAngle += 0.025f;
-    DirectX::XMMATRIX mModel = DirectX::XMMatrixRotationX(1.5708f) * DirectX::XMMatrixRotationY(rotationAngle);
+
+    // normalize 행렬 가져오기
+    DirectX::XMMATRIX mNormalize = model->GetNormalizationMatrix();
+
+    // 기존 회전 행렬
+    DirectX::XMMATRIX mRotation = DirectX::XMMatrixRotationX(1.5708f) * DirectX::XMMatrixRotationY(rotationAngle);
+   
+    // 축소 후 회전
+    DirectX::XMMATRIX mModel = mNormalize * mRotation;
+
+    // view, projection 곱하기
     DirectX::XMMATRIX mMVP = mModel * camera->GetViewMatrix() * camera->GetProjectionMatrix();
 
     DirectX::XMMATRIX cbData = DirectX::XMMatrixTranspose(mMVP);
     context->UpdateSubresource(constantBuffer.Get(), 0, nullptr, &cbData, 0, 0);
     context->VSSetConstantBuffers(0, 1, constantBuffer.GetAddressOf());
 
-    // 2. 도화지 세팅
+    //
     context->OMSetRenderTargets(1, renderTargetView.GetAddressOf(), depthStencilView.Get());
-
-    // 3. 재료 세팅
+    
+    //
     shader->Bind(context.Get());
     context->PSSetSamplers(0, 1, samplerState.GetAddressOf());
 
     float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     context->OMSetBlendState(blendState.Get(), blendFactor, 0xffffffff);
 
-    // 4. 그리기 명령
+    // 그리기 명령
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     model->Draw(context.Get());
 
     swapChain->Present(1, 0);
+}
+
+void Graphics::LoadNewModel(const std::string& filePath) {
+    model.reset();
+    model = std::make_unique<Model>(device.Get(), context.Get(), filePath);
 }

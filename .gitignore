@@ -10,6 +10,9 @@ x86/
 *.ilk
 *.obj
 
+# 로컬 실행 상태
+last_model.txt
+
 # NuGet 패키지
 packages/
 *.nupkg

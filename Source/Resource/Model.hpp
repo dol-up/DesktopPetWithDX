@@ -8,6 +8,7 @@
 #include "Vertex.hpp"
 #include <wrl.h>
 #include <WICTextureLoader.h>
+#include <DirectXMath.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -24,6 +25,7 @@ public:
     // 생성할 때 디바이스랑 파일 경로(fbx, obj 등)를 던져줍니다.
     Model(ID3D11Device* device, ID3D11DeviceContext* context, const std::string& filePath);
     void Draw(ID3D11DeviceContext* context);
+    DirectX::XMMATRIX GetNormalizationMatrix() const;
 
 private:
     std::unique_ptr<VertexBuffer> vertexBuffer;
@@ -31,4 +33,15 @@ private:
 
     std::vector<SubMesh> subMesh;
     std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textures;
+
+    struct MaterialCB {
+        int hasTexture;
+        int padding[3]; // 다이렉트X의 16바이트 정렬 규칙을 맞추기 위한 더미 변수
+    };
+
+    Microsoft::WRL::ComPtr<ID3D11Buffer> materialBuffer;
+
+    float scaleFactor;
+    DirectX::XMFLOAT3 centerOffset;
+
 };
