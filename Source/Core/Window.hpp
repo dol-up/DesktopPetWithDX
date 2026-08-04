@@ -3,6 +3,7 @@
 #define NOMINMAX
 
 #include <windows.h>
+#include <functional>
 
 class Window {
 public:
@@ -14,6 +15,8 @@ public:
 
     bool ProcessMessages();
     HWND GetHWND() const { return hWnd; }
+    void SetModelHitTest(std::function<bool(int, int)> hitTest) { modelHitTest = hitTest; }
+    void SetModelRotate(std::function<void(float, float)> rotate) { modelRotate = rotate; }
 
 
 
@@ -27,6 +30,10 @@ private:
     HINSTANCE hInstance;
 
     bool isDragging = false;
+    bool isRotating = false;
     POINT lastMousePos = { 0, 0 };
     POINT dragStartPos = { 0, 0 };
+    POINT lastRotationMousePos = { 0, 0 };
+    std::function<bool(int, int)> modelHitTest;
+    std::function<void(float, float)> modelRotate;
 };

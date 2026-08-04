@@ -1,4 +1,5 @@
 #include "Graphics.hpp"
+#include "Interaction/ModelPicker.hpp"
 #include <d3dcompiler.h> // 셰이더 컴파일을 위해 추가
 #include <memory>
 
@@ -7,7 +8,8 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
-Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialModelPath) {
+Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialModelPath)
+    : hWnd(hWnd), renderWidth(width), renderHeight(height) {
     // 디바이스 및 스왑 체인 생성
     DXGI_SWAP_CHAIN_DESC sd = {};
     sd.BufferDesc.Width = width;
@@ -117,16 +119,8 @@ void Graphics::Render() {
     context->ClearRenderTargetView(renderTargetView.Get(), clearColor);
     context->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    rotationAngle += 0.025f;
-
-    // normalize 행렬 가져오기
-    DirectX::XMMATRIX mNormalize = model->GetNormalizationMatrix();
-
-    // 기존 회전 행렬
-    DirectX::XMMATRIX mRotation = DirectX::XMMatrixRotationX(1.5708f) * DirectX::XMMatrixRotationY(rotationAngle);
-   
-    // 축소 후 회전
-    DirectX::XMMATRIX mModel = mNormalize * mRotation;
+    // 렌더링과 피킹이 동일한 모델 행렬을 사용한다.
+    DirectX::XMMATRIX mModel = GetModelMatrix();
 
     // view, projection 곱하기
     DirectX::XMMATRIX mMVP = mModel * camera->GetViewMatrix() * camera->GetProjectionMatrix();
@@ -156,4 +150,75 @@ void Graphics::Render() {
 void Graphics::LoadNewModel(const std::string& filePath) {
     model.reset();
     model = std::make_unique<Model>(device.Get(), context.Get(), filePath);
+}
+
+bool Graphics::HitTestModel(int clientX, int clientY) const {
+    if (!model || !camera) {
+        return false;
+    }
+
+    RECT clientRect = {};
+    if (!GetClientRect(hWnd, &clientRect)) {
+        return false;
+    }
+
+    const int clientWidth = clientRect.right - clientRect.left;
+    const int clientHeight = clientRect.bottom - clientRect.top;
+    if (clientWidth <= 0 || clientHeight <= 0) {
+        return false;
+    }
+
+    // 고정된 렌더 크기가 현재 창 크기로 늘어나는 비율을 피킹 좌표에도 적용한다.
+    const float renderX = static_cast<float>(clientX) * renderWidth / clientWidth;
+    const float renderY = static_cast<float>(clientY) * renderHeight / clientHeight;
+
+    return ModelPicker::HitTest(
+        renderX,
+        renderY,
+        static_cast<float>(renderWidth),
+        static_cast<float>(renderHeight),
+        GetModelMatrix(),
+        camera->GetViewMatrix(),
+        camera->GetProjectionMatrix(),
+        model->GetPickVertices(),
+        model->GetPickIndices(),
+        model->GetBoundsMin(),
+        model->GetBoundsMax());
+}
+
+void Graphics::RotateModel(float deltaX, float deltaY) {
+    constexpr float yawSensitivity = 0.01f;
+    constexpr float pitchSensitivity = 0.0075f;
+
+    const DirectX::XMVECTOR pitchRotation = DirectX::XMQuaternionRotationAxis(
+        DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f),
+        -deltaY * pitchSensitivity);
+    const DirectX::XMVECTOR yawRotation = DirectX::XMQuaternionRotationAxis(
+        DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+        -deltaX * yawSensitivity);
+
+    // DirectXMath는 Q1 다음 Q2 순서로 합성하므로 pitch 다음 yaw를 하나의 delta로 만든다.
+    const DirectX::XMVECTOR deltaRotation = DirectX::XMQuaternionMultiply(pitchRotation, yawRotation);
+    const DirectX::XMVECTOR currentRotation = DirectX::XMLoadFloat4(&modelRotation);
+    const DirectX::XMVECTOR updatedRotation = DirectX::XMQuaternionNormalize(
+        DirectX::XMQuaternionMultiply(currentRotation, deltaRotation));
+
+    DirectX::XMStoreFloat4(&modelRotation, updatedRotation);
+}
+
+void Graphics::ResetModelRotation() {
+    modelRotation = { 0.0f, 0.0f, 0.0f, 1.0f };
+}
+
+DirectX::XMMATRIX Graphics::GetModelMatrix() const {
+    if (!model) {
+        return DirectX::XMMatrixIdentity();
+    }
+
+    const DirectX::XMMATRIX normalization = model->GetNormalizationMatrix();
+    const DirectX::XMMATRIX baseRotation = DirectX::XMMatrixRotationX(1.5708f);
+    const DirectX::XMMATRIX userRotation = DirectX::XMMatrixRotationQuaternion(
+        DirectX::XMLoadFloat4(&modelRotation));
+
+    return normalization * baseRotation * userRotation;
 }

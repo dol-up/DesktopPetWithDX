@@ -90,6 +90,10 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		}
 		return 0;
 	case WM_LBUTTONDOWN: {
+		if (isRotating) {
+			return 0;
+		}
+
 		isDragging = true;
 		SetCapture(hWnd); 
 		GetCursorPos(&lastMousePos);
@@ -97,8 +101,32 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		return 0;
 	}
 
-	case WM_MOUSEMOVE: {
+	case WM_RBUTTONDOWN: {
 		if (isDragging) {
+			return 0;
+		}
+
+		isRotating = true;
+		SetCapture(hWnd);
+		GetCursorPos(&lastRotationMousePos);
+		return 0;
+	}
+
+	case WM_MOUSEMOVE: {
+		if (isRotating) {
+			POINT currentPos;
+			GetCursorPos(&currentPos);
+
+			const int dx = currentPos.x - lastRotationMousePos.x;
+			const int dy = currentPos.y - lastRotationMousePos.y;
+
+			if (modelRotate && (dx != 0 || dy != 0)) {
+				modelRotate(static_cast<float>(dx), static_cast<float>(dy));
+			}
+
+			lastRotationMousePos = currentPos;
+		}
+		else if (isDragging) {
 			POINT currentPos;
 			GetCursorPos(&currentPos);
 
@@ -120,6 +148,10 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	}
 
 	case WM_LBUTTONUP: {
+		if (!isDragging) {
+			return 0;
+		}
+
 		isDragging = false;
 		ReleaseCapture();
 
@@ -140,38 +172,37 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		return 0;
 	}
 
+	case WM_RBUTTONUP: {
+		if (!isRotating) {
+			return 0;
+		}
+
+		isRotating = false;
+		ReleaseCapture();
+		return 0;
+	}
+
+	case WM_CAPTURECHANGED:
+		isDragging = false;
+		isRotating = false;
+		return 0;
+
 	case WM_NCHITTEST: {
-		// 현재 마우스 좌표 (모니터 전체 화면 기준)
-		int mouseX = (int)(short)LOWORD(lParam);
-		int mouseY = (int)(short)HIWORD(lParam);
-
-		// 창의 위치와 크기를 가져옴
-		RECT rc;
-		GetWindowRect(hWnd, &rc);
-
-		// 마우스 좌표를 '우리 창의 내부' 좌표(0~width, 0~height)로 변환
-		int localX = mouseX - rc.left;
-		int localY = mouseY - rc.top;
-
-		// 정중앙 좌표 계산 
-		int centerX = (rc.right - rc.left) / 2;
-		int centerY = (rc.bottom - rc.top) / 2;
-
-		// 마우스와 중앙 사이의 거리(제곱)를 계산
-		int dx = localX - centerX;
-		int dy = localY - centerY;
-		int distanceSquared = (dx * dx) + (dy * dy);
-
-		// 충돌 판정! (반지름 150픽셀짜리 원 안에 마우스가 들어왔는가?)
-		int radius = 150;
-
-		if (distanceSquared < (radius * radius)) {
-			// 모델 영역 적중!
+		if (isDragging || isRotating) {
 			return HTCLIENT;
 		}
-		else {
-			return HTTRANSPARENT;
+
+		POINT clientPoint = {
+			static_cast<LONG>(static_cast<short>(LOWORD(lParam))),
+			static_cast<LONG>(static_cast<short>(HIWORD(lParam)))
+		};
+		ScreenToClient(hWnd, &clientPoint);
+
+		if (modelHitTest && modelHitTest(clientPoint.x, clientPoint.y)) {
+			return HTCLIENT;
 		}
+
+		return HTTRANSPARENT;
 	}
 
 	}

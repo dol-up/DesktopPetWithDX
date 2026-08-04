@@ -17,6 +17,9 @@
     <Filter Include="Source\Graphics">
       <UniqueIdentifier>{9076e233-869b-4558-83c9-bc93ad0f3516}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Interaction">
+      <UniqueIdentifier>{2b6ffc94-43c1-429f-b127-1b2b9db08e74}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -49,6 +52,9 @@
     <ClCompile Include="Source\Resource\VertexBuffer.cpp">
       <Filter>Source\Resource</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Interaction\ModelPicker.cpp">
+      <Filter>Source\Interaction</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Graphics\Graphics.hpp">
@@ -74,6 +80,9 @@
     </ClInclude>
     <ClInclude Include="Source\Resource\VertexBuffer.hpp">
       <Filter>Source\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Interaction\ModelPicker.hpp">
+      <Filter>Source\Interaction</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -54,6 +54,7 @@ Model::Model(ID3D11Device* device, ID3D11DeviceContext* context, const std::stri
                 v.u = 0.0f; v.v = 0.0f;
             }
             allVertices.push_back(v);
+            pickVertices.push_back({ v.x, v.y, v.z });
         }
 
         for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
@@ -85,6 +86,10 @@ Model::Model(ID3D11Device* device, ID3D11DeviceContext* context, const std::stri
     centerOffset.x = -(minX + maxX) / 2.0f;
     centerOffset.y = -(minY + maxY) / 2.0f;
     centerOffset.z = -(minZ + maxZ) / 2.0f;
+
+    boundsMin = { minX, minY, minZ };
+    boundsMax = { maxX, maxY, maxZ };
+    pickIndices = allIndices;
 
     textures.resize(scene->mNumMaterials);
 

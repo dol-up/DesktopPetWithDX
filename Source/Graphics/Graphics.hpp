@@ -26,9 +26,18 @@ public:
     void Render();
 
     void LoadNewModel(const std::string& filePath);
+    bool HitTestModel(int clientX, int clientY) const;
+    void RotateModel(float deltaX, float deltaY);
+    void ResetModelRotation();
 
 
 private:
+    DirectX::XMMATRIX GetModelMatrix() const;
+
+    HWND hWnd;
+    int renderWidth;
+    int renderHeight;
+
     // 다이렉트X 핵심 인터페이스 4인방
     Microsoft::WRL::ComPtr<ID3D11Device> device;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
@@ -43,7 +52,7 @@ private:
     std::unique_ptr<Model> model;
 
     Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer; // 상수 버퍼 (GPU로 보낼 택배 상자)
-    float rotationAngle = 0.0f; // 현재 회전 각도
+    DirectX::XMFLOAT4 modelRotation = { 0.0f, 0.0f, 0.0f, 1.0f };
     Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;      // 이미지 돋보기(필터)
 
     Microsoft::WRL::ComPtr<ID3D11BlendState> blendState;

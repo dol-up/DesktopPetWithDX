@@ -26,6 +26,10 @@ public:
     Model(ID3D11Device* device, ID3D11DeviceContext* context, const std::string& filePath);
     void Draw(ID3D11DeviceContext* context);
     DirectX::XMMATRIX GetNormalizationMatrix() const;
+    const std::vector<DirectX::XMFLOAT3>& GetPickVertices() const { return pickVertices; }
+    const std::vector<unsigned short>& GetPickIndices() const { return pickIndices; }
+    const DirectX::XMFLOAT3& GetBoundsMin() const { return boundsMin; }
+    const DirectX::XMFLOAT3& GetBoundsMax() const { return boundsMax; }
 
 private:
     std::unique_ptr<VertexBuffer> vertexBuffer;
@@ -40,6 +44,11 @@ private:
     };
 
     Microsoft::WRL::ComPtr<ID3D11Buffer> materialBuffer;
+
+    std::vector<DirectX::XMFLOAT3> pickVertices;
+    std::vector<unsigned short> pickIndices;
+    DirectX::XMFLOAT3 boundsMin;
+    DirectX::XMFLOAT3 boundsMax;
 
     float scaleFactor;
     DirectX::XMFLOAT3 centerOffset;

@@ -1,6 +1,50 @@
+현재 기능 개발 순서
+
+1. 실제 모델 클릭 및 창 드래그
+
+[x] 화면 좌표를 모델 로컬 공간의 Ray로 변환
+
+[x] AABB 1차 검사 후 모델 삼각형 교차 검사
+
+[x] WM_NCHITTEST의 원형 판정을 모델 피킹 결과로 교체
+
+[x] 창 크기 변경 시 렌더 좌표와 마우스 좌표 비율 보정
+
+[ ] 투명 텍스처의 alpha clip 영역까지 제외하는 정밀 피킹
+
+[ ] 서로 다른 FBX/OBJ 모델을 이용한 수동 동작 확인
+
+2. 중력과 모니터 바닥 충돌
+
+[ ] WindowPhysics.hpp/.cpp 추가
+
+[ ] delta time 기반 수직 속도와 중력 적용
+
+[ ] 드래그 중 물리 정지, 드래그 종료 후 낙하
+
+[ ] MonitorFromWindow와 rcWork를 이용한 현재 모니터 바닥 계산
+
+[ ] 투명 여백이 아닌 모델의 실제 화면 하단을 바닥에 정렬
+
+3. 라이팅
+
+[ ] Vertex에 normal 추가 및 Assimp normal 로드
+
+[ ] DirectionalLight와 ambient/diffuse 조명 추가
+
+[ ] 픽셀 단위 Blinn-Phong specular 추가
+
+[ ] premultiplied alpha 출력 유지 확인
+
+---
+
 기능1 마우스 인터랙션
 
-[ ] 우클릭 드래그로 모델 회전시키기
+[x] 우클릭 드래그로 모델 회전시키기
+
+[x] Quaternion 누적 회전으로 짐벌락 제거
+
+[x] K+L 조작 모드에서 R 키로 모델 회전 초기화
 
 Window.cpp의 메시지 루프(WndProc)에서 WM_RBUTTONDOWN, WM_MOUSEMOVE, WM_RBUTTONUP 이벤트 캐치하기.
 

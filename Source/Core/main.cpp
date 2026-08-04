@@ -46,6 +46,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     bool fixedMode = true;
     bool wasModeKeyPressed = false;
     bool wasModelChangeKeyPressed = false;
+    bool wasRotationResetKeyPressed = false;
     int width = 600;
     int height = 600;
 
@@ -63,6 +64,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // 2. 다이렉트X 그래픽스 엔진 생성 (윈도우의 핸들(HWND)을 넘겨줌)
     Graphics gfx(window.GetHWND(), width, height, modelPath);
+    window.SetModelHitTest([&gfx](int clientX, int clientY) {
+        return gfx.HitTestModel(clientX, clientY);
+    });
+    window.SetModelRotate([&gfx](float deltaX, float deltaY) {
+        gfx.RotateModel(deltaX, deltaY);
+    });
 
 
     int width_diff = width / 100;
@@ -92,6 +99,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
 
         wasModeKeyPressed = isModeKeyPressed;
+
+        const bool isRotationResetKeyPressed = (GetAsyncKeyState('R') & 0x8000) != 0;
+        if (!fixedMode && isRotationResetKeyPressed && !wasRotationResetKeyPressed) {
+            gfx.ResetModelRotation();
+        }
+        wasRotationResetKeyPressed = isRotationResetKeyPressed;
 
         if (!fixedMode) {
             if (GetAsyncKeyState('W') & 0x8000) { currentY -= speed; isMoved = true; }
