@@ -16,15 +16,15 @@
 
 2. 중력과 모니터 바닥 충돌
 
-[ ] WindowPhysics.hpp/.cpp 추가
+[x] WindowPhysics.hpp/.cpp 추가
 
-[ ] delta time 기반 수직 속도와 중력 적용
+[x] delta time 기반 수직 속도와 중력 적용
 
-[ ] 드래그 중 물리 정지, 드래그 종료 후 낙하
+[x] 드래그 중 물리 정지, 드래그 종료 후 낙하
 
-[ ] MonitorFromWindow와 rcWork를 이용한 현재 모니터 바닥 계산
+[x] MonitorFromWindow와 rcWork를 이용한 현재 모니터 바닥 계산
 
-[ ] 투명 여백이 아닌 모델의 실제 화면 하단을 바닥에 정렬
+[x] 투명 여백이 아닌 모델의 실제 화면 하단을 바닥에 정렬
 
 3. 라이팅
 

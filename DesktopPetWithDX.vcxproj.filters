@@ -20,6 +20,9 @@
     <Filter Include="Source\Interaction">
       <UniqueIdentifier>{2b6ffc94-43c1-429f-b127-1b2b9db08e74}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Physics">
+      <UniqueIdentifier>{f6974701-e77c-4a8e-a683-ecf52d2e036f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -55,6 +58,9 @@
     <ClCompile Include="Source\Interaction\ModelPicker.cpp">
       <Filter>Source\Interaction</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Physics\WindowPhysics.cpp">
+      <Filter>Source\Physics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Graphics\Graphics.hpp">
@@ -83,6 +89,9 @@
     </ClInclude>
     <ClInclude Include="Source\Interaction\ModelPicker.hpp">
       <Filter>Source\Interaction</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics\WindowPhysics.hpp">
+      <Filter>Source\Physics</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,8 +1,11 @@
 #include "Window.hpp"
 #include "Graphics.hpp"
+#include "Physics/WindowPhysics.hpp"
 #include <memory>
 #include <Windows.h>
 #include <commdlg.h>
+#include <algorithm>
+#include <chrono>
 #include <fstream>
 #include <string>
 
@@ -64,6 +67,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // 2. 다이렉트X 그래픽스 엔진 생성 (윈도우의 핸들(HWND)을 넘겨줌)
     Graphics gfx(window.GetHWND(), width, height, modelPath);
+    WindowPhysics physics;
     window.SetModelHitTest([&gfx](int clientX, int clientY) {
         return gfx.HitTestModel(clientX, clientY);
     });
@@ -78,8 +82,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // 윈도우 크기 조절
     SetWindowPos(window.GetHWND(), HWND_TOPMOST, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER);
 
+    auto previousFrameTime = std::chrono::steady_clock::now();
+
     // 3. 메인 게임 루프
     while (window.ProcessMessages()) {
+
+        const auto currentFrameTime = std::chrono::steady_clock::now();
+        float deltaTime = std::chrono::duration<float>(currentFrameTime - previousFrameTime).count();
+        previousFrameTime = currentFrameTime;
+        deltaTime = std::min(deltaTime, 0.05f);
 
         HWND hWnd = window.GetHWND();
         RECT rect;
@@ -144,6 +155,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // width, height는 맨 위에서 선언한 창 크기 변수
             SetWindowPos(hWnd, HWND_TOP, currentX, currentY, width, height, SWP_SHOWWINDOW);
         }
+
+        const bool suspendPhysics = window.IsDragging() || window.IsRotating() || !fixedMode;
+        physics.Update(hWnd, deltaTime, gfx.GetModelBottomInClient(), suspendPhysics);
 
         // 매 프레임마다 화면을 지우고 새로 그립니다.
         gfx.Render();

@@ -1,6 +1,7 @@
 #include "Graphics.hpp"
 #include "Interaction/ModelPicker.hpp"
 #include <d3dcompiler.h> // 셰이더 컴파일을 위해 추가
+#include <algorithm>
 #include <memory>
 
 
@@ -184,6 +185,40 @@ bool Graphics::HitTestModel(int clientX, int clientY) const {
         model->GetPickIndices(),
         model->GetBoundsMin(),
         model->GetBoundsMax());
+}
+
+float Graphics::GetModelBottomInClient() const {
+    if (!model || !camera) {
+        return static_cast<float>(renderHeight);
+    }
+
+    RECT clientRect = {};
+    if (!GetClientRect(hWnd, &clientRect)) {
+        return static_cast<float>(renderHeight);
+    }
+
+    const int clientWidth = clientRect.right - clientRect.left;
+    const int clientHeight = clientRect.bottom - clientRect.top;
+    if (clientWidth <= 0 || clientHeight <= 0) {
+        return static_cast<float>(renderHeight);
+    }
+
+    const DirectX::XMMATRIX worldViewProjection =
+        GetModelMatrix() * camera->GetViewMatrix() * camera->GetProjectionMatrix();
+
+    float maximumRenderY = 0.0f;
+    for (const DirectX::XMFLOAT3& vertex : model->GetPickVertices()) {
+        const DirectX::XMVECTOR projected = DirectX::XMVector3TransformCoord(
+            DirectX::XMLoadFloat3(&vertex),
+            worldViewProjection);
+
+        const float normalizedY = DirectX::XMVectorGetY(projected);
+        const float renderY = (1.0f - normalizedY) * 0.5f * renderHeight;
+        maximumRenderY = std::max(maximumRenderY, renderY);
+    }
+
+    const float clientBottom = maximumRenderY * clientHeight / renderHeight;
+    return std::max(0.0f, std::min(clientBottom, static_cast<float>(clientHeight)));
 }
 
 void Graphics::RotateModel(float deltaX, float deltaY) {

@@ -74,3 +74,38 @@
 - `R` 키 회전 초기화는 `K+L`로 전환하는 조작 모드에서만 동작하며 모델의 기본 축 보정 회전은 유지합니다.
 - 우클릭 회전 감도는 Yaw `0.01`, Pitch `0.0075` rad/pixel입니다.
 - Debug x64 빌드 결과는 오류 0개이며 기존 `NOMINMAX` 재정의 경고가 남아 있습니다.
+
+## 2026-08-12 22:58 KST
+
+### 작업 일시
+
+- 2026-08-12 22:58 (Asia/Seoul)
+
+### 구현/수정 내용 요약
+
+- 창의 수직 속도와 프레임 `deltaTime`을 이용해 모델이 아래로 낙하하는 기본 중력을 구현했습니다.
+- 긴 프레임으로 인한 급격한 이동을 막도록 `deltaTime`에 상한을 적용하고, 서브픽셀 이동량을 누적해 저속 낙하도 부드럽게 처리했습니다.
+- 모델을 좌클릭 드래그하거나 우클릭 회전하는 동안 중력을 정지하고, 조작을 끝내면 새 낙하를 시작하도록 연결했습니다.
+- `K+L` 조작 모드에서는 W/A/S/D 창 이동 및 크기 조절과 충돌하지 않도록 물리를 일시 정지했습니다.
+- `MonitorFromWindow`와 `MONITORINFO::rcWork`를 사용해 현재 모니터의 작업 표시줄 위를 착지 바닥으로 계산했습니다.
+- 현재 모델 회전과 창 크기를 반영한 정점 투영 결과로 화면상 모델 최하단을 계산하여 투명한 창 여백이 아닌 보이는 모델을 기준으로 착지하도록 구현했습니다.
+- 중력 및 모니터 바닥 충돌 항목을 `docs/TODO.md`에서 완료 처리했습니다.
+
+### 건드린 파일
+
+- `DesktopPetWithDX.vcxproj`
+- `DesktopPetWithDX.vcxproj.filters`
+- `Source/Core/Window.hpp`
+- `Source/Core/main.cpp`
+- `Source/Graphics/Graphics.cpp`
+- `Source/Graphics/Graphics.hpp`
+- `Source/Physics/WindowPhysics.cpp`
+- `Source/Physics/WindowPhysics.hpp`
+- `docs/TODO.md`
+
+### 주의사항
+
+- 현재 물리는 Y축 낙하와 바닥 위치 보정만 담당하며 무게중심, 각속도, 관성, 충돌 토크는 계산하지 않습니다.
+- 모델 최하단은 현재 정적인 원본 메시 정점으로 계산하므로 스켈레탈 애니메이션 구현 후에는 캡슐 Collider 또는 발 기준 Collider로 교체할 예정입니다.
+- 낙하 중 자세 복원과 `Falling → Landing → Idle` 전환은 애니메이션 상태 시스템을 구현할 때 통합합니다.
+- Debug x64 빌드 결과는 오류 0개이며 기존 `NOMINMAX` 재정의 경고 2개가 남아 있습니다.

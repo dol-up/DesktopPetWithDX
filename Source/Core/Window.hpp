@@ -15,6 +15,8 @@ public:
 
     bool ProcessMessages();
     HWND GetHWND() const { return hWnd; }
+    bool IsDragging() const { return isDragging; }
+    bool IsRotating() const { return isRotating; }
     void SetModelHitTest(std::function<bool(int, int)> hitTest) { modelHitTest = hitTest; }
     void SetModelRotate(std::function<void(float, float)> rotate) { modelRotate = rotate; }
 

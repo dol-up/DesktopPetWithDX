@@ -27,6 +27,7 @@ public:
 
     void LoadNewModel(const std::string& filePath);
     bool HitTestModel(int clientX, int clientY) const;
+    float GetModelBottomInClient() const;
     void RotateModel(float deltaX, float deltaY);
     void ResetModelRotation();
 

@@ -140,6 +140,7 @@
     <ClCompile Include="Source\Graphics\Graphics.cpp" />
     <ClCompile Include="Source\Graphics\Shader.cpp" />
     <ClCompile Include="Source\Interaction\ModelPicker.cpp" />
+    <ClCompile Include="Source\Physics\WindowPhysics.cpp" />
     <ClCompile Include="Source\Resource\Camera.cpp" />
     <ClCompile Include="Source\Resource\IndexBuffer.cpp" />
     <ClCompile Include="Source\Resource\Model.cpp" />
@@ -150,6 +151,7 @@
     <ClInclude Include="Source\Graphics\Graphics.hpp" />
     <ClInclude Include="Source\Graphics\Shader.hpp" />
     <ClInclude Include="Source\Interaction\ModelPicker.hpp" />
+    <ClInclude Include="Source\Physics\WindowPhysics.hpp" />
     <ClInclude Include="Source\Resource\Camera.hpp" />
     <ClInclude Include="Source\Resource\IndexBuffer.hpp" />
     <ClInclude Include="Source\Resource\Model.hpp" />
