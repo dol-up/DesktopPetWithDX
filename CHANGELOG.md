@@ -1,5 +1,37 @@
 # CHANGELOG
 
+## 2026-08-18 00:29 KST
+
+### 구현/수정 내용 요약
+
+- 테스트한 Blinn-Phong 라이팅에서 모델 입 주변 아티팩트가 발생하여 normal 로드와 모든 라이팅 계산을 제거했습니다.
+- 셰이더를 텍스처 원본 색상과 premultiplied-alpha 출력만 사용하던 경로로 복구했습니다.
+- 모델을 우클릭으로 더블클릭하면 열리는 Win32 설정 창을 추가했습니다.
+- 조명 슬라이더는 제거하고 추후 다른 설정을 추가할 수 있는 기본 설정 창만 유지했습니다.
+- alpha 기반 정밀 피킹은 필수 작업에서 보류/선택 항목으로 변경했습니다.
+
+### 건드린 파일
+
+- `Asset/Shaders/Shader.hlsl`
+- `Source/Graphics/Graphics.cpp`
+- `Source/Graphics/Graphics.hpp`
+- `Source/Graphics/Shader.cpp`
+- `Source/Core/SettingsWindow.cpp`
+- `Source/Core/SettingsWindow.hpp`
+- `Source/Core/Window.cpp`
+- `Source/Core/Window.hpp`
+- `Source/Core/main.cpp`
+- `Source/Resource/Camera.cpp`
+- `Source/Resource/Camera.hpp`
+- `Source/Resource/Model.cpp`
+- `Source/Resource/Vertex.hpp`
+- `docs/TODO.md`
+
+### 검증
+
+- Debug x64 빌드 결과는 오류 0개입니다.
+- HLSL `VSMain`과 `PSMain`을 Shader Model 5.0으로 각각 컴파일했습니다.
+
 ## 2026-08-03 18:38 KST
 
 ### 작업 일시

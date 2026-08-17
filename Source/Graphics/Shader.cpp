@@ -1,38 +1,38 @@
-#include "Shader.hpp"
+ï»¿#include "Shader.hpp"
 #include <d3dcompiler.h>
 
 Shader::Shader(ID3D11Device* device, HWND hWnd, const std::wstring& shaderFile) {
     Microsoft::WRL::ComPtr<ID3DBlob> vsBlob, psBlob, errorBlob;
 
-    // ¹öÅØ½º ¼ÎÀÌ´õ ÄÄÆÄÀÏ
+    // ë²„í…ìŠ¤ ì…°ì´ë” ì»´íŒŒì¼
     HRESULT hrVS = D3DCompileFromFile(shaderFile.c_str(), nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, &errorBlob);
     if (FAILED(hrVS)) {
         if (errorBlob) {
-            MessageBoxA(nullptr, (char*)errorBlob->GetBufferPointer(), "¼ÎÀÌ´õ ÄÄÆÄÀÏ ¿¡·¯", MB_OK);
+            MessageBoxA(nullptr, (char*)errorBlob->GetBufferPointer(), "ì…°ì´ë” ì»´íŒŒì¼ ì—ëŸ¬", MB_OK);
             errorBlob->Release();
         }
         else {
-            MessageBoxA(nullptr, "ÆÄÀÏÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù", "Error", MB_OK);
+            MessageBoxA(nullptr, "íŒŒì¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤", "Error", MB_OK);
         }
         return;
     }
 
-    // ÇÈ¼¿ ¼ÎÀÌ´õ ÄÄÆÄÀÏ
+    // í”½ì…€ ì…°ì´ë” ì»´íŒŒì¼
     HRESULT hrPS = D3DCompileFromFile(shaderFile.c_str(), nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, &errorBlob);
     if (FAILED(hrPS)) {
         if (errorBlob) OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-        MessageBox(hWnd, "ÇÈ¼¿ ¼ÎÀÌ´õ ÄÄÆÄÀÏ ¿¡·¯", "Error", MB_OK);
+        MessageBox(hWnd, "í”½ì…€ ì…°ì´ë” ì»´íŒŒì¼ ì—ëŸ¬", "Error", MB_OK);
         return;
     }
 
     device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShader);
     device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShader);
 
-    // ÀÎÇ² ·¹ÀÌ¾Æ¿ô »ý¼º
+    // ì¸í’‹ ë ˆì´ì•„ì›ƒ ìƒì„±
     D3D11_INPUT_ELEMENT_DESC ied[] = {
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
         {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 28, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 28, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
     device->CreateInputLayout(ied, ARRAYSIZE(ied), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayout);
 }

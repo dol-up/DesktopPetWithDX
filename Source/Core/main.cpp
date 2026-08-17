@@ -1,4 +1,5 @@
-#include "Window.hpp"
+ï»¿#include "Window.hpp"
+#include "SettingsWindow.hpp"
 #include "Graphics.hpp"
 #include "Physics/WindowPhysics.hpp"
 #include <memory>
@@ -14,7 +15,7 @@ std::string OpenFileDialog() {
     char fileName[MAX_PATH] = "";
     OPENFILENAMEA ofn = {};
     ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = NULL; // À©µµ¿ì ÇÚµé ³Ö¾îÁÖ¸é ´õ ÁÁÀ½
+    ofn.hwndOwner = NULL; // ìœˆë„ìš° í•¸ë“¤ ë„£ì–´ì£¼ë©´ ë” ì¢‹ìŒ
     ofn.lpstrFile = fileName;
     ofn.nMaxFile = MAX_PATH;
     ofn.lpstrFilter = "3D Models (*.fbx;*.obj)\0*.fbx;*.obj\0All Files (*.*)\0*.*\0";
@@ -43,7 +44,7 @@ std::string LoadLastModelPath() {
     return path;
 }
 
-// ÄÜ¼ÖÀÇ main() ´ë½Å À©µµ¿ì ÇÁ·Î±×·¥Àº WinMain()À» »ç¿ëÇÕ´Ï´Ù.
+// ì½˜ì†”ì˜ main() ëŒ€ì‹  ìœˆë„ìš° í”„ë¡œê·¸ë¨ì€ WinMain()ì„ ì‚¬ìš©í•©ë‹ˆë‹¤.
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
     bool fixedMode = true;
@@ -53,19 +54,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     int width = 600;
     int height = 600;
 
-    // 1. Åõ¸í À©µµ¿ì »ı¼º
+    // 1. íˆ¬ëª… ìœˆë„ìš° ìƒì„±
     Window window(width, height, "DesktopPetWindow");
 
     std::string modelPath = LoadLastModelPath();
-    // Å½»ö±â ¶ç¿ì±â
+    // íƒìƒ‰ê¸° ë„ìš°ê¸°
     if (modelPath.empty()) {
         modelPath = OpenFileDialog();
     }
 
-    // °æ·Î ÀúÀå
+    // ê²½ë¡œ ì €ì¥
     SaveLastModelPath(modelPath);
 
-    // 2. ´ÙÀÌ·ºÆ®X ±×·¡ÇÈ½º ¿£Áø »ı¼º (À©µµ¿ìÀÇ ÇÚµé(HWND)À» ³Ñ°ÜÁÜ)
+    // 2. ë‹¤ì´ë ‰íŠ¸X ê·¸ë˜í”½ìŠ¤ ì—”ì§„ ìƒì„± (ìœˆë„ìš°ì˜ í•¸ë“¤(HWND)ì„ ë„˜ê²¨ì¤Œ)
     Graphics gfx(window.GetHWND(), width, height, modelPath);
     WindowPhysics physics;
     window.SetModelHitTest([&gfx](int clientX, int clientY) {
@@ -75,16 +76,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         gfx.RotateModel(deltaX, deltaY);
     });
 
+    SettingsWindow settingsWindow(window.GetHWND());
+    window.SetSettingsRequested([&settingsWindow]() {
+        settingsWindow.Show();
+    });
+
 
     int width_diff = width / 100;
     int height_diff = height / 100;
 
-    // À©µµ¿ì Å©±â Á¶Àı
+    // ìœˆë„ìš° í¬ê¸° ì¡°ì ˆ
     SetWindowPos(window.GetHWND(), HWND_TOPMOST, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER);
 
     auto previousFrameTime = std::chrono::steady_clock::now();
 
-    // 3. ¸ŞÀÎ °ÔÀÓ ·çÇÁ
+    // 3. ë©”ì¸ ê²Œì„ ë£¨í”„
     while (window.ProcessMessages()) {
 
         const auto currentFrameTime = std::chrono::steady_clock::now();
@@ -99,14 +105,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         int currentX = rect.left;
         int currentY = rect.top;
 
-        int speed = 5; // ÀÌµ¿ ¼Óµµ
+        int speed = 5; // ì´ë™ ì†ë„
         bool isMoved = false;
         bool isChanged = false;
 
         bool isModeKeyPressed = (GetAsyncKeyState('K') & 0x8000) && (GetAsyncKeyState('L') & 0x8000);
 
         if (isModeKeyPressed && !wasModeKeyPressed) {
-            fixedMode = !fixedMode; // 1¹ø¸¸ µÚÁıÈû
+            fixedMode = !fixedMode; // 1ë²ˆë§Œ ë’¤ì§‘í˜
         }
 
         wasModeKeyPressed = isModeKeyPressed;
@@ -132,34 +138,34 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         bool isModelChangeKeyPressed = (GetAsyncKeyState('M') & 0x8000);
 
-        // Å°¸¦ ²Ú ´©¸£°í ÀÖ¾îµµ Ã¢ÀÌ ¹«ÇÑÀ¸·Î ¶ßÁö ¾Ê°Ô "¹æ±İ ¸· ´­·¶À» ¶§"¸¸ ½ÇÇà
+        // í‚¤ë¥¼ ê¾¹ ëˆ„ë¥´ê³  ìˆì–´ë„ ì°½ì´ ë¬´í•œìœ¼ë¡œ ëœ¨ì§€ ì•Šê²Œ "ë°©ê¸ˆ ë§‰ ëˆŒë €ì„ ë•Œ"ë§Œ ì‹¤í–‰
         if (isModelChangeKeyPressed && !wasModelChangeKeyPressed) {
 
-            // 1. Å½»ö±â ¶ç¿ö¼­ °æ·Î ¹Ş¾Æ¿À±â
+            // 1. íƒìƒ‰ê¸° ë„ì›Œì„œ ê²½ë¡œ ë°›ì•„ì˜¤ê¸°
             std::string newPath = OpenFileDialog();
 
-            // 2. À¯Àú°¡ ÆÄÀÏÀ» Á¦´ë·Î °ñ¶ú´Ù¸é?
+            // 2. ìœ ì €ê°€ íŒŒì¼ì„ ì œëŒ€ë¡œ ê³¨ëë‹¤ë©´?
             if (!newPath.empty()) {
-                // 3. ¸ğµ¨ ±³Ã¼ ½ÇÇà!
+                // 3. ëª¨ë¸ êµì²´ ì‹¤í–‰!
                 gfx.LoadNewModel(newPath);
 
-                // 4. ´ÙÀ½¿¡ ÄÓ ¶§µµ ÀÌ ¸ğµ¨ÀÌ ³ª¿À°Ô °æ·Î ÀúÀå!
+                // 4. ë‹¤ìŒì— ì¼¤ ë•Œë„ ì´ ëª¨ë¸ì´ ë‚˜ì˜¤ê²Œ ê²½ë¡œ ì €ì¥!
                 SaveLastModelPath(newPath);
             }
         }
-        // »óÅÂ ¾÷µ¥ÀÌÆ®
+        // ìƒíƒœ ì—…ë°ì´íŠ¸
         wasModelChangeKeyPressed = isModelChangeKeyPressed;
         
 
         if (isMoved || isChanged) {
-            // width, height´Â ¸Ç À§¿¡¼­ ¼±¾ğÇÑ Ã¢ Å©±â º¯¼ö
+            // width, heightëŠ” ë§¨ ìœ„ì—ì„œ ì„ ì–¸í•œ ì°½ í¬ê¸° ë³€ìˆ˜
             SetWindowPos(hWnd, HWND_TOP, currentX, currentY, width, height, SWP_SHOWWINDOW);
         }
 
         const bool suspendPhysics = window.IsDragging() || window.IsRotating() || !fixedMode;
         physics.Update(hWnd, deltaTime, gfx.GetModelBottomInClient(), suspendPhysics);
 
-        // ¸Å ÇÁ·¹ÀÓ¸¶´Ù È­¸éÀ» Áö¿ì°í »õ·Î ±×¸³´Ï´Ù.
+        // ë§¤ í”„ë ˆì„ë§ˆë‹¤ í™”ë©´ì„ ì§€ìš°ê³  ìƒˆë¡œ ê·¸ë¦½ë‹ˆë‹¤.
         gfx.Render();
 
     }

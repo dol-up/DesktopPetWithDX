@@ -9,7 +9,7 @@ Window::Window(int width, int height, const char* name)
 	// 윈도우 클래스 등록
 	WNDCLASSEX wc = { 0 };
 	wc.cbSize = sizeof(wc);
-	wc.style = CS_OWNDC;
+	wc.style = CS_OWNDC | CS_DBLCLKS;
 	wc.lpfnWndProc = WindowProcSetup;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
@@ -109,6 +109,22 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		isRotating = true;
 		SetCapture(hWnd);
 		GetCursorPos(&lastRotationMousePos);
+		return 0;
+	}
+
+	case WM_RBUTTONDBLCLK: {
+		if (isDragging) {
+			return 0;
+		}
+
+		isRotating = false;
+		if (GetCapture() == hWnd) {
+			ReleaseCapture();
+		}
+
+		if (settingsRequested) {
+			settingsRequested();
+		}
 		return 0;
 	}
 

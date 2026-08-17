@@ -43,6 +43,9 @@
     <ClCompile Include="Source\Core\Window.cpp">
       <Filter>Source\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Core\SettingsWindow.cpp">
+      <Filter>Source\Core</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Resource\Camera.cpp">
       <Filter>Source\Resource</Filter>
     </ClCompile>
@@ -70,6 +73,9 @@
       <Filter>Source\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Source\Core\Window.hpp">
+      <Filter>Source\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\SettingsWindow.hpp">
       <Filter>Source\Core</Filter>
     </ClInclude>
     <ClInclude Include="Source\Resource\Camera.hpp">

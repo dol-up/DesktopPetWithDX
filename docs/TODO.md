@@ -10,9 +10,9 @@
 
 [x] 창 크기 변경 시 렌더 좌표와 마우스 좌표 비율 보정
 
-[ ] 투명 텍스처의 alpha clip 영역까지 제외하는 정밀 피킹
+[ ] (보류/선택) 투명 텍스처의 alpha clip 영역까지 제외하는 정밀 피킹
 
-[ ] 서로 다른 FBX/OBJ 모델을 이용한 수동 동작 확인
+[ ] (보류/선택) 서로 다른 FBX/OBJ 모델을 이용한 수동 동작 확인
 
 2. 중력과 모니터 바닥 충돌
 
@@ -26,15 +26,17 @@
 
 [x] 투명 여백이 아닌 모델의 실제 화면 하단을 바닥에 정렬
 
-3. 라이팅
+3. 라이팅 (제외)
 
-[ ] Vertex에 normal 추가 및 Assimp normal 로드
+[x] 모델 입 주변 아티팩트 확인 후 normal 기반 Blinn-Phong 라이팅 제거
 
-[ ] DirectionalLight와 ambient/diffuse 조명 추가
+[x] premultiplied alpha 출력 유지 확인
 
-[ ] 픽셀 단위 Blinn-Phong specular 추가
+4. 설정 창
 
-[ ] premultiplied alpha 출력 유지 확인
+[x] 우클릭 더블클릭으로 설정 창 열기
+
+[x] 추후 설정 항목을 추가할 수 있는 기본 설정 창 유지
 
 ---
 

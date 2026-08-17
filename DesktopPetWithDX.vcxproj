@@ -136,6 +136,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\main.cpp" />
+    <ClCompile Include="Source\Core\SettingsWindow.cpp" />
     <ClCompile Include="Source\Core\Window.cpp" />
     <ClCompile Include="Source\Graphics\Graphics.cpp" />
     <ClCompile Include="Source\Graphics\Shader.cpp" />
@@ -148,6 +149,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Core\Window.hpp" />
+    <ClInclude Include="Source\Core\SettingsWindow.hpp" />
     <ClInclude Include="Source\Graphics\Graphics.hpp" />
     <ClInclude Include="Source\Graphics\Shader.hpp" />
     <ClInclude Include="Source\Interaction\ModelPicker.hpp" />

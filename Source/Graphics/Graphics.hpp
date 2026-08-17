@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #define NOMINMAX
 
@@ -19,7 +19,7 @@ public:
     Graphics(HWND hWnd, int width, int height, const std::string& initialModelPath);
     ~Graphics();
 
-    // º¹»ç ¹æÁö
+    // ë³µì‚¬ ë°©ì§€
     Graphics(const Graphics&) = delete;
     Graphics& operator=(const Graphics&) = delete;
 
@@ -39,22 +39,22 @@ private:
     int renderWidth;
     int renderHeight;
 
-    // ´ÙÀÌ·ºÆ®X ÇÙ½É ÀÎÅÍÆäÀÌ½º 4ÀÎ¹æ
+    // ë‹¤ì´ë ‰íŠ¸X í•µì‹¬ ì¸í„°í˜ì´ìŠ¤ 4ì¸ë°©
     Microsoft::WRL::ComPtr<ID3D11Device> device;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
     Microsoft::WRL::ComPtr<IDXGISwapChain> swapChain;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> renderTargetView;
 
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> depthStencilBuffer;     // ±íÀÌ °ªÀ» ÀúÀåÇÒ ¸Ş¸ğ¸® °ø°£
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilView> depthStencilView; // ÆÄÀÌÇÁ¶óÀÎ¿¡ ²È¾ÆÁÙ ¾î´ğÅÍ
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> depthStencilBuffer;     // ê¹Šì´ ê°’ì„ ì €ì¥í•  ë©”ëª¨ë¦¬ ê³µê°„
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView> depthStencilView; // íŒŒì´í”„ë¼ì¸ì— ê½‚ì•„ì¤„ ì–´ëŒ‘í„°
 
     std::unique_ptr<Shader> shader;
     std::unique_ptr<Camera> camera;
     std::unique_ptr<Model> model;
 
-    Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer; // »ó¼ö ¹öÆÛ (GPU·Î º¸³¾ ÅÃ¹è »óÀÚ)
+    Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer;
     DirectX::XMFLOAT4 modelRotation = { 0.0f, 0.0f, 0.0f, 1.0f };
-    Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;      // ÀÌ¹ÌÁö µ¸º¸±â(ÇÊÅÍ)
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;      // ì´ë¯¸ì§€ ë‹ë³´ê¸°(í•„í„°)
 
     Microsoft::WRL::ComPtr<ID3D11BlendState> blendState;
 };

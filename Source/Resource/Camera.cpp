@@ -1,7 +1,7 @@
-#include "Camera.hpp"
+ï»¿#include "Camera.hpp"
 
 Camera::Camera(float windowWidth, float windowHeight) {
-    // Ä«¸Ş¶ó ÃÊ±â À§Ä¡
+    // ì¹´ë©”ë¼ ì´ˆê¸° ìœ„ì¹˜
     position = DirectX::XMVectorSet(0.0f, 0.0f, -3.5f, 1.0f);
     focus = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
     up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
@@ -14,7 +14,7 @@ DirectX::XMMATRIX Camera::GetViewMatrix() const {
 }
 
 DirectX::XMMATRIX Camera::GetProjectionMatrix() const {
-    // 45µµ ½Ã¾ß°¢, °¡±î¿î ÇÑ°è¼± 0.1f, ¸Õ ÇÑ°è¼± 100.0f
+    // 45ë„ ì‹œì•¼ê°, ê°€ê¹Œìš´ í•œê³„ì„  0.1f, ë¨¼ í•œê³„ì„  100.0f
     return DirectX::XMMatrixPerspectiveFovLH(
         DirectX::XMConvertToRadians(45.0f), aspectRatio, 0.1f, 100.0f
     );

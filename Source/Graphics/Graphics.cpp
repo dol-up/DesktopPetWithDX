@@ -1,6 +1,6 @@
-#include "Graphics.hpp"
+ï»¿#include "Graphics.hpp"
 #include "Interaction/ModelPicker.hpp"
-#include <d3dcompiler.h> // ¼ÎÀÌ´õ ÄÄÆÄÀÏÀ» À§ÇØ Ãß°¡
+#include <d3dcompiler.h> // ì…°ì´ë” ì»´íŒŒì¼ì„ ìœ„í•´ ì¶”ê°€
 #include <algorithm>
 #include <memory>
 
@@ -11,7 +11,7 @@
 
 Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialModelPath)
     : hWnd(hWnd), renderWidth(width), renderHeight(height) {
-    // µğ¹ÙÀÌ½º ¹× ½º¿Ò Ã¼ÀÎ »ı¼º
+    // ë””ë°”ì´ìŠ¤ ë° ìŠ¤ì™‘ ì²´ì¸ ìƒì„±
     DXGI_SWAP_CHAIN_DESC sd = {};
     sd.BufferDesc.Width = width;
     sd.BufferDesc.Height = height;
@@ -46,20 +46,20 @@ Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialM
     depthDesc.Height = height;
     depthDesc.MipLevels = 1;
     depthDesc.ArraySize = 1;
-    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // 24ºñÆ®´Â ±íÀÌ, 8ºñÆ®´Â ½ºÅÙ½Ç¿¡ »ç¿ë
+    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // 24ë¹„íŠ¸ëŠ” ê¹Šì´, 8ë¹„íŠ¸ëŠ” ìŠ¤í…ì‹¤ì— ì‚¬ìš©
     depthDesc.SampleDesc.Count = 4;
     depthDesc.SampleDesc.Quality = 0;
     depthDesc.Usage = D3D11_USAGE_DEFAULT;
-    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL; // ±íÀÌ ¹öÆÛ·Î ¾²°Ú´Ù°í ¼±¾ğ
+    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL; // ê¹Šì´ ë²„í¼ë¡œ ì“°ê² ë‹¤ê³  ì„ ì–¸
 
     device->CreateTexture2D(&depthDesc, nullptr, &depthStencilBuffer);
     device->CreateDepthStencilView(depthStencilBuffer.Get(), nullptr, &depthStencilView);
     
-    //depthbuffer ³ªÁß¿¡ ¼öÁ¤ÇØ¾ßÇÔ
+    //depthbuffer ë‚˜ì¤‘ì— ìˆ˜ì •í•´ì•¼í•¨
     D3D11_BUFFER_DESC cbd = {};
     cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     cbd.Usage = D3D11_USAGE_DEFAULT;
-    cbd.ByteWidth = sizeof(DirectX::XMMATRIX); // ¹öÆÛ Å©±â = Çà·Ä Å©±â
+    cbd.ByteWidth = sizeof(DirectX::XMMATRIX);
     cbd.CPUAccessFlags = 0;
 
     device->CreateBuffer(&cbd, nullptr, &constantBuffer);
@@ -68,7 +68,7 @@ Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialM
     shader = std::make_unique<Shader>(device.Get(), hWnd, L"Asset/Shaders/Shader.hlsl");
     camera = std::make_unique<Camera>((float)width, (float)height);
 
-    // ºäÆ÷Æ®(±×·ÁÁú ¿µ¿ª) ¼³Á¤
+    // ë·°í¬íŠ¸(ê·¸ë ¤ì§ˆ ì˜ì—­) ì„¤ì •
     D3D11_VIEWPORT vp = {};
     vp.Width = (float)width;
     vp.Height = (float)height;
@@ -80,14 +80,14 @@ Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialM
     rasterDesc.FillMode = D3D11_FILL_SOLID;
     rasterDesc.CullMode = D3D11_CULL_BACK;
     rasterDesc.MultisampleEnable = TRUE;     // 
-    rasterDesc.AntialiasedLineEnable = TRUE; // ¾ÈÆ¼ ¾Ù¸®¾î½Ì ½ºÀ§Ä¡
+    rasterDesc.AntialiasedLineEnable = TRUE; // ì•ˆí‹° ì•¨ë¦¬ì–´ì‹± ìŠ¤ìœ„ì¹˜
 
     Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterState;
     device->CreateRasterizerState(&rasterDesc, &rasterState);
     context->RSSetState(rasterState.Get());
 
 
-    //»ùÇÃ·¯ ¼¼ÆÃ (ÀÌ¹ÌÁö¸¦ È®´ë/Ãà¼ÒÇÒ ¶§ ¾î¶»°Ô ºÎµå·´°Ô ¸¸µéÁö °áÁ¤)
+    //ìƒ˜í”ŒëŸ¬ ì„¸íŒ… (ì´ë¯¸ì§€ë¥¼ í™•ëŒ€/ì¶•ì†Œí•  ë•Œ ì–´ë–»ê²Œ ë¶€ë“œëŸ½ê²Œ ë§Œë“¤ì§€ ê²°ì •)
     D3D11_SAMPLER_DESC sampDesc = {};
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
     sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -99,7 +99,7 @@ Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialM
 
     device->CreateSamplerState(&sampDesc, samplerState.GetAddressOf());
 
-    // ¾ËÆÄ ºí·»µùÀ» À§ÇÑ »çÀü ÀÛ¾÷
+    // ì•ŒíŒŒ ë¸”ë Œë”©ì„ ìœ„í•œ ì‚¬ì „ ì‘ì—…
     D3D11_BLEND_DESC blendDesc = {};
     blendDesc.RenderTarget[0].BlendEnable = TRUE;
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
@@ -120,10 +120,10 @@ void Graphics::Render() {
     context->ClearRenderTargetView(renderTargetView.Get(), clearColor);
     context->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    // ·»´õ¸µ°ú ÇÇÅ·ÀÌ µ¿ÀÏÇÑ ¸ğµ¨ Çà·ÄÀ» »ç¿ëÇÑ´Ù.
+    // ë Œë”ë§ê³¼ í”¼í‚¹ì´ ë™ì¼í•œ ëª¨ë¸ í–‰ë ¬ì„ ì‚¬ìš©í•œë‹¤.
     DirectX::XMMATRIX mModel = GetModelMatrix();
 
-    // view, projection °öÇÏ±â
+    // view, projection ê³±í•˜ê¸°
     DirectX::XMMATRIX mMVP = mModel * camera->GetViewMatrix() * camera->GetProjectionMatrix();
 
     DirectX::XMMATRIX cbData = DirectX::XMMatrixTranspose(mMVP);
@@ -140,7 +140,7 @@ void Graphics::Render() {
     float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     context->OMSetBlendState(blendState.Get(), blendFactor, 0xffffffff);
 
-    // ±×¸®±â ¸í·É
+    // ê·¸ë¦¬ê¸° ëª…ë ¹
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     model->Draw(context.Get());
@@ -169,7 +169,7 @@ bool Graphics::HitTestModel(int clientX, int clientY) const {
         return false;
     }
 
-    // °íÁ¤µÈ ·»´õ Å©±â°¡ ÇöÀç Ã¢ Å©±â·Î ´Ã¾î³ª´Â ºñÀ²À» ÇÇÅ· ÁÂÇ¥¿¡µµ Àû¿ëÇÑ´Ù.
+    // ê³ ì •ëœ ë Œë” í¬ê¸°ê°€ í˜„ì¬ ì°½ í¬ê¸°ë¡œ ëŠ˜ì–´ë‚˜ëŠ” ë¹„ìœ¨ì„ í”¼í‚¹ ì¢Œí‘œì—ë„ ì ìš©í•œë‹¤.
     const float renderX = static_cast<float>(clientX) * renderWidth / clientWidth;
     const float renderY = static_cast<float>(clientY) * renderHeight / clientHeight;
 
@@ -232,7 +232,7 @@ void Graphics::RotateModel(float deltaX, float deltaY) {
         DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
         -deltaX * yawSensitivity);
 
-    // DirectXMath´Â Q1 ´ÙÀ½ Q2 ¼ø¼­·Î ÇÕ¼ºÇÏ¹Ç·Î pitch ´ÙÀ½ yaw¸¦ ÇÏ³ªÀÇ delta·Î ¸¸µç´Ù.
+    // DirectXMathëŠ” Q1 ë‹¤ìŒ Q2 ìˆœì„œë¡œ í•©ì„±í•˜ë¯€ë¡œ pitch ë‹¤ìŒ yawë¥¼ í•˜ë‚˜ì˜ deltaë¡œ ë§Œë“ ë‹¤.
     const DirectX::XMVECTOR deltaRotation = DirectX::XMQuaternionMultiply(pitchRotation, yawRotation);
     const DirectX::XMVECTOR currentRotation = DirectX::XMLoadFloat4(&modelRotation);
     const DirectX::XMVECTOR updatedRotation = DirectX::XMQuaternionNormalize(

@@ -22,7 +22,7 @@ struct PS_IN {
     float2 uv : TEXCOORD0;
 };
 
-// Á¤Á¡ ¼ÎÀÌ´õ (Vertex Shader)
+// ì •ì  ì…°ì´ë” (Vertex Shader)
 PS_IN VSMain(VS_IN input) {
     PS_IN output;
     output.pos = mul(float4(input.pos, 1.0f), transform);
@@ -31,7 +31,7 @@ PS_IN VSMain(VS_IN input) {
     return output;
 }
 
-// ÇÈ¼¿ ¼ÎÀÌ´õ (Pixel Shader)
+// í”½ì…€ ì…°ì´ë” (Pixel Shader)
 float4 PSMain(PS_IN input) : SV_TARGET
 {
     float4 texColor;

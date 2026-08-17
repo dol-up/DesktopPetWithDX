@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #define NOMINMAX
 
@@ -19,6 +19,7 @@ public:
     bool IsRotating() const { return isRotating; }
     void SetModelHitTest(std::function<bool(int, int)> hitTest) { modelHitTest = hitTest; }
     void SetModelRotate(std::function<void(float, float)> rotate) { modelRotate = rotate; }
+    void SetSettingsRequested(std::function<void()> callback) { settingsRequested = callback; }
 
 
 
@@ -38,4 +39,5 @@ private:
     POINT lastRotationMousePos = { 0, 0 };
     std::function<bool(int, int)> modelHitTest;
     std::function<void(float, float)> modelRotate;
+    std::function<void()> settingsRequested;
 };
