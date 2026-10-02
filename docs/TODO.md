@@ -1,6 +1,6 @@
 # 기능 구현 현황
 
-기준: 2026-10-02. 사용 방법·설계·검증 범위는 [애니메이션 런타임](Animation_Runtime.md), [자율 걷기](Autonomous_Walking.md), [개발 학습 가이드](DEVELOPMENT_STUDY_GUIDE.md)를 참고한다.
+기준: 2026-10-02. 사용 방법·설계·검증 범위는 [애니메이션 런타임](Animation_Runtime.md)과 [자율 걷기](Autonomous_Walking.md), 최근 변경은 [변경 기록](../CHANGELOG.md)을 참고한다.
 
 ## 완료
 

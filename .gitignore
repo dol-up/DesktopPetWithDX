@@ -15,6 +15,9 @@ last_model.txt
 animation_settings.txt
 animation_settings.txt.tmp
 
+# 개인 공부 자료 (로컬에만 보관)
+/docs/DEVELOPMENT_STUDY_GUIDE.md
+
 # NuGet 패키지
 packages/
 *.nupkg

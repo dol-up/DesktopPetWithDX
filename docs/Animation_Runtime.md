@@ -2,7 +2,7 @@
 
 기준: 2026-10-02의 현재 작업 코드. 애니메이션 클립 로딩, 스켈레톤 구성, 자세 계산, GPU 스키닝, 행동 상태 전환, ImGui 설정, 모델별 저장·복원, 전환 보간과 자율 걷기 1~6단계를 구현했다. 자율 걷기는 판단·이동·방향에 Walk 재생, 설정 UI·저장, 통합 검증을 연결한 상태다.
 
-이 문서는 실제 동작과 코드의 연결을 설명한다. C++·STL·Win32·DirectX 개념을 함께 공부하려면 [개발 학습 가이드](DEVELOPMENT_STUDY_GUIDE.md)를 읽는다.
+이 문서는 실제 동작과 코드의 연결을 설명한다. 자율 이동의 사용 방법과 좌표 처리는 [자율 걷기](Autonomous_Walking.md), 확인이 남은 항목은 [구현 현황](TODO.md)을 참고한다.
 
 ## 1. 설정 화면 사용 방법
 
@@ -40,7 +40,7 @@
 | [PetBehavior.cpp](../Source/Core/PetBehavior.cpp) | 행동 상태, 상태별 설정, 자동 클립 선택과 미리보기 |
 | [GravitySimulation.cpp](../Source/Physics/GravitySimulation.cpp) | 창 API와 분리된 낙하·접지 계산 |
 | [WindowPhysics.cpp](../Source/Physics/WindowPhysics.cpp) | 모니터 작업 영역 확인, 계산 결과를 실제 창 이동에 적용 |
-| [WanderController.cpp](../Source/Core/WanderController.cpp) | 대기·회전·이동의 시간, 방향, 경계 계산 |
+| [WanderController.cpp](../Source/Core/WanderController.cpp) | 대기·회전·이동·정면 복귀의 시간, 방향, 경계 계산 |
 | [AutonomousMotion.cpp](../Source/Core/AutonomousMotion.cpp) | 중력·자율 이동·방향 회전을 조정하고 창 위치를 함께 적용 |
 | [SettingsWindow.cpp](../Source/Core/SettingsWindow.cpp) | ImGui 설정 화면, 사용자 입력, 저장과 미리보기 종료 |
 | [AnimationSettingsStore.cpp](../Source/Core/AnimationSettingsStore.cpp) | 모델별 설정 파일의 읽기·쓰기·클립 복원 |
@@ -168,9 +168,30 @@ GPU 정점은 같은 본의 중복 가중치를 먼저 합친 뒤 큰 가중치 
 
 복원할 클립이 사라지거나 지원되지 않으면 그 항목만 자동 선택으로 바꾸고 설정 화면에서 알린다. 잘못된 설정 파일은 오류를 표시하며 시작 시 기본 설정을 사용한다.
 
-현재 저장 형식은 버전 2다. `wander` 행에 걷기 활성화, 기준 속도, 대기 최소·최대, 이동 최소·최대, 회전 시간, 정면 보정 라디안을 저장하고 `state 4`에 Walk 클립·배속·반복을 저장한다. 예전 버전 1의 4개 상태도 읽으며 새 Walk는 자동·배속 1·반복, 자율 걷기는 꺼짐으로 채운다. 다음 저장 때 다른 모델의 기존 설정을 포함해 버전 2로 기록한다. [학습 가이드](DEVELOPMENT_STUDY_GUIDE.md#223-파일-형식과-완전한-읽기)에 전체 예시가 있다.
+현재 저장 형식은 버전 2다. `wander` 행에 걷기 활성화, 기준 속도, 대기 최소·최대, 이동 최소·최대, 회전 시간, 정면 보정 라디안을 저장하고 `state 4`에 Walk 클립·배속·반복을 저장한다. 예전 버전 1의 4개 상태도 읽으며 새 Walk는 자동·배속 1·반복, 자율 걷기는 꺼짐으로 채운다. 다음 저장 때 다른 모델의 기존 설정을 포함해 버전 2로 기록한다.
 
 애니메이션 설정은 새 모델 목록을 임시로 만든 후 `.tmp` 파일에 쓰고 `MoveFileExW`로 기존 파일을 교체한다. 쓰기 실패 시 기존 설정 파일과 메모리 목록을 유지한다. 마지막 모델·위치 파일은 이 저장기와 별도의 단순 스트림 저장 방식이다.
+
+### 저장 파일 예시
+
+아래는 파일 구조를 보여 주는 예시다. 경로는 실제 모델의 정규화된 절대 경로로 기록한다. 걷기 활성화 값이 1이어도 해당 모델에 유효한 Walk 클립이 없으면 이동하지 않는다.
+
+```text
+desktop_pet_animation 2
+model "c:/models/pet.fbx"
+transition 0.15
+wander 1 60 3 8 2 5 0.3 0
+state 0 0 1 1 "" 0
+state 1 0 1 1 "" 0
+state 2 0 1 1 "" 0
+state 3 0 1 0 "" 0
+state 4 0 1 1 "" 0
+end
+```
+
+`state` 행의 필드는 상태 번호, 선택 방식, 재생 배속, 반복 여부, 원본 클립 이름, 같은 이름의 등장 순번이다. 상태는 Idle 0·Dragged 1·Falling 2·Landing 3·Walk 4, 선택 방식은 자동 0·재생 안 함 1·지정 2다. 등장 순번은 0부터 센다. 반복은 Landing에서 0, Walk에서 1로 고정한다.
+
+`wander` 행은 활성화 여부, 기준 픽셀/초, 대기 최소·최대 초, 이동 최소·최대 초, 방향 전환 초, 정면 보정 라디안 순서다. Walk 배속은 `state 4`의 값이며 방향 전환 시간은 걷기 시작·경계 반전·정면 복귀에 함께 사용한다. 버전 1에는 `wander`와 `state 4`가 없다.
 
 ## 9. 설정 창과 텍스처 정책
 
