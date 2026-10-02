@@ -5,17 +5,30 @@
 #endif
 
 #include <windows.h>
+#include <cstdint>
+#include "GravitySimulation.hpp"
+
+struct WindowPhysicsFrame {
+    PhysicsResult result;
+    RECT windowRect{};
+    RECT workArea{};
+    POINT clientOffset{};
+    HMONITOR monitor = nullptr;
+    LONG clientHeight = 0;
+    int verticalPixels = 0;
+    bool suspended = false;
+};
 
 class WindowPhysics {
 public:
-    void Update(HWND hWnd, float deltaTime, float modelBottomInClient, bool isSuspended);
+    PhysicsResult Update(HWND hWnd, float deltaTime, float modelBottomInClient, bool isSuspended);
+    // Prepare gravity without changing HWND position. Apply combines both axes.
+    WindowPhysicsFrame Prepare(HWND hWnd, float deltaTime, float modelBottomInClient,
+        bool isSuspended, HMONITOR preferredMonitor = nullptr);
+    PhysicsResult Apply(HWND hWnd, const WindowPhysicsFrame& frame, std::int64_t horizontalPixels,
+        float finalModelBottomInClient);
     void ResetVelocity();
 
 private:
-    float verticalVelocity = 0.0f;
-    float subpixelY = 0.0f;
-    bool wasSuspended = false;
-
-    static constexpr float gravity = 1800.0f;
-    static constexpr float maxFallSpeed = 2400.0f;
+    GravitySimulation simulation;
 };

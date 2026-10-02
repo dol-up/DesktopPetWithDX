@@ -26,6 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Asset\Shaders\Skinning.hlsli"><Filter>Shaders</Filter></None>
     <None Include="Asset\Shaders\Shader.hlsl">
       <Filter>Shaders</Filter>
     </None>
@@ -43,6 +44,11 @@
     <ClCompile Include="Source\Core\Window.cpp">
       <Filter>Source\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Core\PetBehavior.cpp"><Filter>Source\Core</Filter></ClCompile>
+    <ClCompile Include="Source\Core\WanderController.cpp"><Filter>Source\Core</Filter></ClCompile>
+    <ClCompile Include="Source\Core\AutonomousMotion.cpp"><Filter>Source\Core</Filter></ClCompile>
+    <ClCompile Include="Source\Core\AnimationSettingsStore.cpp"><Filter>Source\Core</Filter></ClCompile>
+    <ClCompile Include="Source\Physics\GravitySimulation.cpp"><Filter>Source\Physics</Filter></ClCompile>
     <ClCompile Include="Source\Core\SettingsWindow.cpp">
       <Filter>Source\Core</Filter>
     </ClCompile>
@@ -53,6 +59,18 @@
       <Filter>Source\Resource</Filter>
     </ClCompile>
     <ClCompile Include="Source\Resource\Model.cpp">
+      <Filter>Source\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Resource\AnimationClip.cpp">
+      <Filter>Source\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Resource\Skeleton.cpp">
+      <Filter>Source\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Resource\Animator.cpp">
+      <Filter>Source\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Resource\Skinning.cpp">
       <Filter>Source\Resource</Filter>
     </ClCompile>
     <ClCompile Include="Source\Resource\VertexBuffer.cpp">
@@ -75,6 +93,11 @@
     <ClInclude Include="Source\Core\Window.hpp">
       <Filter>Source\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Core\PetBehavior.hpp"><Filter>Source\Core</Filter></ClInclude>
+    <ClInclude Include="Source\Core\WanderController.hpp"><Filter>Source\Core</Filter></ClInclude>
+    <ClInclude Include="Source\Core\AutonomousMotion.hpp"><Filter>Source\Core</Filter></ClInclude>
+    <ClInclude Include="Source\Core\AnimationSettingsStore.hpp"><Filter>Source\Core</Filter></ClInclude>
+    <ClInclude Include="Source\Physics\GravitySimulation.hpp"><Filter>Source\Physics</Filter></ClInclude>
     <ClInclude Include="Source\Core\SettingsWindow.hpp">
       <Filter>Source\Core</Filter>
     </ClInclude>
@@ -85,6 +108,18 @@
       <Filter>Source\Resource</Filter>
     </ClInclude>
     <ClInclude Include="Source\Resource\Model.hpp">
+      <Filter>Source\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Resource\AnimationClip.hpp">
+      <Filter>Source\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Resource\Skeleton.hpp">
+      <Filter>Source\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Resource\Animator.hpp">
+      <Filter>Source\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Resource\Skinning.hpp">
       <Filter>Source\Resource</Filter>
     </ClInclude>
     <ClInclude Include="Source\Resource\Vertex.hpp">

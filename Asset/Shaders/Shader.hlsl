@@ -1,3 +1,5 @@
+#include "Skinning.hlsli"
+
 cbuffer TransformBuffer : register(b0) {
     matrix transform;
 };
@@ -14,6 +16,8 @@ struct VS_IN {
     float3 pos : POSITION;
     float4 color : COLOR;
     float2 uv : TEXCOORD0;
+    uint4 boneIndices : BLENDINDICES0;
+    float4 boneWeights : BLENDWEIGHT0;
 };
 
 struct PS_IN {
@@ -25,7 +29,7 @@ struct PS_IN {
 // 정점 셰이더 (Vertex Shader)
 PS_IN VSMain(VS_IN input) {
     PS_IN output;
-    output.pos = mul(float4(input.pos, 1.0f), transform);
+    output.pos = mul(SkinPosition(input.pos, input.boneIndices, input.boneWeights), transform);
     output.color = input.color;
     output.uv = input.uv;
     return output;

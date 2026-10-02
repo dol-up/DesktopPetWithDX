@@ -14,9 +14,16 @@
 #include "Camera.hpp"
 #include "Model.hpp"
 
+struct ModelScreenBounds {
+    float left = 0;
+    float right = 0;
+    bool valid = false;
+};
+
 class Graphics {
 public:
-    Graphics(HWND hWnd, int width, int height, const std::string& initialModelPath);
+    Graphics(HWND hWnd, int width, int height, const std::string& initialModelPath,
+        D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE);
     ~Graphics();
 
     // 복사 방지
@@ -24,15 +31,35 @@ public:
     Graphics& operator=(const Graphics&) = delete;
 
     void Render();
+    void UpdateAnimation(double deltaSeconds);
+    void UpdateBehavior(double deltaSeconds, const PetBehaviorInput& input);
+    const PetBehavior& GetBehavior() const { return model->GetBehavior(); }
+    PetBehavior& GetBehavior() { return model->GetBehavior(); }
+    const std::vector<AnimationClip>& GetAnimationClips() const { return model->GetAnimationClips(); }
+    ID3D11Device* GetDevice() const { return device.Get(); }
+    ID3D11DeviceContext* GetContext() const { return context.Get(); }
+    Animator& GetAnimator() { return model->GetAnimator(); }
 
     void LoadNewModel(const std::string& filePath);
     bool HitTestModel(int clientX, int clientY) const;
     float GetModelBottomInClient() const;
+    ModelScreenBounds GetWanderBoundsInClient() const;
+    void SetAutonomousFacing(double yawRadians);
+    double GetAutonomousFacing() const { return autonomousYaw; }
     void RotateModel(float deltaX, float deltaY);
     void ResetModelRotation();
 
 
 private:
+    friend void TestAutonomousMotion(const char* modelPath);
+    void InvalidateGeometryCaches();
+    mutable bool wanderBoundsCacheValid = false;
+    mutable int wanderClientWidth = 0, wanderClientHeight = 0;
+    mutable ModelScreenBounds wanderCachedBounds;
+    mutable bool groundCacheValid = false;
+    mutable int groundClientWidth = 0;
+    mutable int groundClientHeight = 0;
+    mutable float groundCachedBottom = 0;
     DirectX::XMMATRIX GetModelMatrix() const;
 
     HWND hWnd;
@@ -54,6 +81,7 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer;
     DirectX::XMFLOAT4 modelRotation = { 0.0f, 0.0f, 0.0f, 1.0f };
+    double autonomousYaw = 0;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;      // 이미지 돋보기(필터)
 
     Microsoft::WRL::ComPtr<ID3D11BlendState> blendState;

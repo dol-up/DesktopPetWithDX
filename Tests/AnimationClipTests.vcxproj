@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64"><Configuration>Debug</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{95B576B1-B895-4449-A03E-358B42084872}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType><UseDebugLibraries>true</UseDebugLibraries><PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>$(MSBuildThisFileDirectory)..\x64\Debug\</OutDir>
+    <IntDir>$(MSBuildThisFileDirectory)x64\Debug\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)..\Source;$(MSBuildThisFileDirectory)..\Source\Resource;$(MSBuildThisFileDirectory)..\Source\Graphics;$(MSBuildThisFileDirectory)..\Source\Interaction;$(MSBuildThisFileDirectory)..\Source\Core;$(MSBuildThisFileDirectory)..\Source\Physics;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level4</WarningLevel><ExceptionHandling>Sync</ExceptionHandling>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link><SubSystem>Console</SubSystem></Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="AnimationClipTests.cpp" />
+    <ClCompile Include="PetBehaviorTests.cpp" />
+    <ClCompile Include="WanderControllerTests.cpp" />
+    <ClCompile Include="WalkingTests.cpp" />
+    <ClCompile Include="AutonomousMotionTests.cpp" />
+    <ClCompile Include="..\Source\Core\WanderController.cpp" />
+    <ClCompile Include="..\Source\Core\AutonomousMotion.cpp" />
+    <ClCompile Include="..\Source\Physics\WindowPhysics.cpp" />
+    <ClCompile Include="AnimationSettingsTests.cpp" />
+    <ClCompile Include="AnimatorTransitionTests.cpp" />
+    <ClCompile Include="SettingsWindowTests.cpp" />
+    <ClCompile Include="..\Source\Core\SettingsWindow.cpp"><AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
+    <ClCompile Include="..\Source\Graphics\Graphics.cpp" />
+    <ClCompile Include="..\Source\Resource\Camera.cpp" />
+    <ClCompile Include="..\Source\Core\AnimationSettingsStore.cpp" />
+    <ClCompile Include="..\Source\Core\PetBehavior.cpp" />
+    <ClCompile Include="..\Source\Physics\GravitySimulation.cpp" />
+    <ClCompile Include="..\Source\Resource\AnimationClip.cpp" />
+    <ClCompile Include="..\Source\Resource\Skeleton.cpp" />
+    <ClCompile Include="SkeletonTests.cpp" />
+    <ClCompile Include="AnimatorTests.cpp" />
+    <ClCompile Include="..\Source\Resource\Animator.cpp" />
+    <ClCompile Include="..\Source\Resource\Skinning.cpp" />
+    <ClCompile Include="..\Source\Resource\VertexBuffer.cpp" />
+    <ClCompile Include="..\Source\Resource\IndexBuffer.cpp" />
+    <ClCompile Include="..\Source\Graphics\Shader.cpp" />
+    <ClCompile Include="..\Source\Interaction\ModelPicker.cpp" />
+    <ClCompile Include="SkinningTests.cpp" />
+    <ClCompile Include="GpuSkinningTests.cpp" />
+    <ClCompile Include="ModelRenderingTests.cpp" />
+    <ClCompile Include="..\Source\Resource\Model.cpp" />
+  </ItemGroup>
+  <Import Project="..\ThirdParty\ImGui.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="..\packages\directxtk_uwp.2026.4.1.1\build\native\directxtk_uwp.targets" />
+</Project>

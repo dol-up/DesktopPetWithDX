@@ -12,6 +12,8 @@ x86/
 
 # 로컬 실행 상태
 last_model.txt
+animation_settings.txt
+animation_settings.txt.tmp
 
 # NuGet 패키지
 packages/

@@ -2,7 +2,11 @@
 #include <stdexcept>
 #include <Windows.h>
 #include <WICTextureLoader.h> // assimp였나 이 라이브러리 쓰면 걍 알아서 해준다고 해서 ㅇㅇ
-#include <cassert>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+#include <algorithm>
+#include <limits>
 
 Model::Model(ID3D11Device* device, ID3D11DeviceContext* context, const std::string& filePath) {
     Assimp::Importer importer;
@@ -15,89 +19,41 @@ Model::Model(ID3D11Device* device, ID3D11DeviceContext* context, const std::stri
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::string err = importer.GetErrorString();
         OutputDebugStringA(err.c_str());
-        assert(false);
+        throw std::runtime_error("Failed to load model: " + err);
     }
 
-    std::vector<Vertex> allVertices;
-    std::vector<unsigned short> allIndices;
-    unsigned int vertexOffset = 0;
-    unsigned int indexOffset = 0;
-
-
-    float minX = 1e9f, minY = 1e9f, minZ = 1e9f;
-    float maxX = -1e9f, maxY = -1e9f, maxZ = -1e9f;
-
-    // 1. 메쉬 파싱
-    for (unsigned int m = 0; m < scene->mNumMeshes; m++) {
-        aiMesh* mesh = scene->mMeshes[m];
-
-        SubMesh sm;
-        sm.startIndexLocation = indexOffset;
-        sm.materialIndex = mesh->mMaterialIndex;
-
-        for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
-            Vertex v;
-            v.x = mesh->mVertices[i].x;
-            v.y = mesh->mVertices[i].y;
-            v.z = mesh->mVertices[i].z;
-            v.r = 1.0f; v.g = 1.0f; v.b = 1.0f; v.a = 1.0f;
-
-            minX = std::min(minX, v.x); maxX = std::max(maxX, v.x);
-            minY = std::min(minY, v.y); maxY = std::max(maxY, v.y);
-            minZ = std::min(minZ, v.z); maxZ = std::max(maxZ, v.z);
-
-            if (mesh->HasTextureCoords(0)) {
-                v.u = mesh->mTextureCoords[0][i].x;
-                v.v = mesh->mTextureCoords[0][i].y;
-            }
-            else {
-                v.u = 0.0f; v.v = 0.0f;
-            }
-            allVertices.push_back(v);
-            pickVertices.push_back({ v.x, v.y, v.z });
-        }
-
-        for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
-            aiFace face = mesh->mFaces[i];
-            for (unsigned int j = 0; j < face.mNumIndices; j++) {
-                allIndices.push_back(face.mIndices[j] + vertexOffset);
-                indexOffset++;
-            }
-        }
-
-        sm.indexCount = indexOffset - sm.startIndexLocation;
-        subMesh.push_back(sm);
-
-        vertexOffset += mesh->mNumVertices;
-
+    animationClips = LoadAnimationClips(*scene);
+    skeleton = LoadSkeleton(*scene);
+    animationNodeBindings = BindAnimationChannels(skeleton, animationClips);
+    animator = std::make_unique<Animator>(skeleton, animationClips, animationNodeBindings);
+    OutputDebugStringA(("Skeleton nodes: " + std::to_string(skeleton.nodes.size()) + "\n").c_str());
+    OutputDebugStringA(("Animation clips: " + std::to_string(animationClips.size()) + "\n").c_str());
+    for (const AnimationClip& clip : animationClips) {
+        OutputDebugStringA(("  [" + std::to_string(clip.sourceIndex) + "] " + clip.displayName +
+            " | seconds=" + std::to_string(clip.durationSeconds) +
+            " | channels=" + std::to_string(clip.channels.size()) +
+            (clip.usedDefaultTicksPerSecond ? " | assumed 25 ticks/s" : "") +
+            " | unsupported mesh=" + std::to_string(clip.unsupportedMeshChannelCount) +
+            " morph=" + std::to_string(clip.unsupportedMorphChannelCount) + "\n").c_str());
     }
-    
-    float width = maxX - minX + 1.0f;
-    float height = maxY - minY;
-    float depth = maxZ - minZ;
 
-    float maxDim = std::max({ width, height, depth });
-    if (maxDim == 0.0f) maxDim = 1.0f; // divide-by-zero 방지
-
-    // 모델 크기 화면에 맞게 조절 (크기 이상하면 조절)
-    scaleFactor = 1.5f / maxDim;
-
-    // 모델 아래를 바닥에
-    centerOffset.x = -(minX + maxX) / 2.0f;
-    centerOffset.y = -(minY + maxY) / 2.0f;
-    centerOffset.z = -(minZ + maxZ) / 2.0f;
-
-    boundsMin = { minX, minY, minZ };
-    boundsMax = { maxX, maxY, maxZ };
-    pickIndices = allIndices;
-
+    geometry = BuildSkinningGeometry(*scene, skeleton);
+    if (geometry.vertices.empty() || geometry.indices.empty()) {
+        throw std::runtime_error("Model contains no renderable triangles");
+    }
+    EnsurePicking();
+    groundingVertices = pickVertices;
+    const float maxDim = std::max({ boundsMax.x - boundsMin.x,
+        boundsMax.y - boundsMin.y, boundsMax.z - boundsMin.z });
+    scaleFactor = maxDim > 0 ? 1.5f / maxDim : 1;
+    centerOffset = { -(boundsMin.x + boundsMax.x) * 0.5f,
+        -(boundsMin.y + boundsMax.y) * 0.5f, -(boundsMin.z + boundsMax.z) * 0.5f };
     textures.resize(scene->mNumMaterials);
 
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
         aiMaterial* material = scene->mMaterials[i];
 
         aiString texPathStr;
-        bool isEmbeddedLoaded = false;
 
         if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texPathStr) == AI_SUCCESS ||
             material->GetTexture(aiTextureType_BASE_COLOR, 0, &texPathStr) == AI_SUCCESS) {
@@ -117,7 +73,6 @@ Model::Model(ID3D11Device* device, ID3D11DeviceContext* context, const std::stri
 
                     if (SUCCEEDED(hr)) {
                         OutputDebugStringA(("FBX 내장 텍스처[" + std::string(texPathStr.C_Str()) + "] 로드 성공\n").c_str());
-                        isEmbeddedLoaded = true;
                     }
                 }
                 else {
@@ -126,26 +81,7 @@ Model::Model(ID3D11Device* device, ID3D11DeviceContext* context, const std::stri
             }
         }
 
-        if (!isEmbeddedLoaded) {
-            aiString aiMatName;
-            material->Get(AI_MATKEY_NAME, aiMatName);
-            std::string matName = aiMatName.C_Str();
-
-            std::string fullPath = "Asset/Textures/" + matName + ".png";
-
-            int size_needed = MultiByteToWideChar(CP_UTF8, 0, &fullPath[0], (int)fullPath.size(), NULL, 0);
-            std::wstring wPath(size_needed, 0);
-            MultiByteToWideChar(CP_UTF8, 0, &fullPath[0], (int)fullPath.size(), &wPath[0], size_needed);
-
-            HRESULT hr = DirectX::CreateWICTextureFromFile(device, context, wPath.c_str(), nullptr, &textures[i]);
-
-            if (FAILED(hr)) {
-                OutputDebugStringA(("로드 실패: 내장도 없고, 폴더에 [" + matName + ".png]도 없음\n").c_str());
-            }
-            else {
-                OutputDebugStringA(("로드 성공: 외부 폴더에서 [" + matName + ".png] 장착\n").c_str());
-            }
-        }
+        // 내장 텍스처가 없으면 빈 SRV를 유지하여 텍스처 없이 렌더링한다.
     }
 
     D3D11_BUFFER_DESC mbDesc = {};
@@ -153,17 +89,42 @@ Model::Model(ID3D11Device* device, ID3D11DeviceContext* context, const std::stri
     mbDesc.Usage = D3D11_USAGE_DEFAULT;
     mbDesc.ByteWidth = sizeof(MaterialCB);
 
-    device->CreateBuffer(&mbDesc, nullptr, &materialBuffer); //텍스쳐 있는지 없는지 정보 전달해줄 버퍼
+    if (FAILED(device->CreateBuffer(&mbDesc, nullptr, &materialBuffer)))
+        throw std::runtime_error("Failed to create material buffer");
+    if (palette.size() > (std::numeric_limits<UINT>::max)() / sizeof(SkeletonMatrix))
+        throw std::runtime_error("Skinning palette is too large");
+    D3D11_BUFFER_DESC skinDesc{};
+    skinDesc.ByteWidth = static_cast<UINT>(palette.size() * sizeof(SkeletonMatrix));
+    skinDesc.Usage = D3D11_USAGE_DEFAULT;
+    skinDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    skinDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+    skinDesc.StructureByteStride = sizeof(SkeletonMatrix);
+    if (FAILED(device->CreateBuffer(&skinDesc, nullptr, &skinningBuffer)))
+        throw std::runtime_error("Failed to create skinning buffer");
+    D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc{};
+    viewDesc.Format = DXGI_FORMAT_UNKNOWN;
+    viewDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+    viewDesc.Buffer.NumElements = static_cast<UINT>(palette.size());
+    if (FAILED(device->CreateShaderResourceView(skinningBuffer.Get(), &viewDesc, &skinningView)))
+        throw std::runtime_error("Failed to create skinning buffer view");
 
-    vertexBuffer = std::make_unique<VertexBuffer>(device, allVertices.data(), allVertices.size());
-    indexBuffer = std::make_unique<IndexBuffer>(device, allIndices.data(), allIndices.size());
+    vertexBuffer = std::make_unique<VertexBuffer>(device, geometry.vertices.data(), static_cast<UINT>(geometry.vertices.size()));
+    indexBuffer = std::make_unique<IndexBuffer>(device, geometry.indices.data(), static_cast<UINT>(geometry.indices.size()));
+
+    behavior = std::make_unique<PetBehavior>(*animator, animationClips);
 }
 
 void Model::Draw(ID3D11DeviceContext* context) {
+    EnsurePalette();
+    if (gpuRevision != paletteRevision) {
+        context->UpdateSubresource(skinningBuffer.Get(), 0, nullptr, palette.data(), 0, 0);
+        gpuRevision = paletteRevision;
+    }
+    context->VSSetShaderResources(0, 1, skinningView.GetAddressOf());
     vertexBuffer->Bind(context);
     indexBuffer->Bind(context);
 
-    for (const auto& sm : subMesh) {
+    for (const auto& sm : geometry.draws) {
         // 텍스쳐 존재 확인
         bool hasTexture = (sm.materialIndex < textures.size() && textures[sm.materialIndex] != nullptr);
 
@@ -177,12 +138,12 @@ void Model::Draw(ID3D11DeviceContext* context) {
         }
 
         // 셰이더에게 "텍스처 유무" 신호(Constant Buffer) 업데이트 및 전송
-        MaterialCB cbData;
+        MaterialCB cbData{};
         cbData.hasTexture = hasTexture ? 1 : 0;
         context->UpdateSubresource(materialBuffer.Get(), 0, nullptr, &cbData, 0, 0);
         context->PSSetConstantBuffers(0, 1, materialBuffer.GetAddressOf()); // 픽셀 셰이더의 b0 슬롯에 연결
         
-        context->DrawIndexed(sm.indexCount, sm.startIndexLocation, 0);
+        context->DrawIndexed(sm.indexCount, sm.startIndex, 0);
     }
 }
 
@@ -195,4 +156,34 @@ DirectX::XMMATRIX Model::GetNormalizationMatrix() const {
 
     // 이동 -> 축소 순서
     return translation * scaling;
+}
+
+float Model::GetGroundingBottom(const DirectX::XMMATRIX& worldViewProjection, float clientHeight) const {
+    float maximumY = 0;
+    for (const auto& vertex : groundingVertices) {
+        const auto projected = DirectX::XMVector3TransformCoord(DirectX::XMLoadFloat3(&vertex), worldViewProjection);
+        maximumY = std::max(maximumY, (1 - DirectX::XMVectorGetY(projected)) * 0.5f * clientHeight);
+    }
+    return std::max(0.0f, std::min(maximumY, clientHeight));
+}
+
+void Model::EnsurePalette() const {
+    if (paletteRevision == animator->GetPoseRevision()) return;
+    palette = BuildSkinningPalette(skeleton, animator->GetPose(), geometry);
+    paletteRevision = animator->GetPoseRevision();
+}
+
+void Model::EnsurePicking() const {
+    EnsurePalette();
+    if (pickRevision == paletteRevision) return;
+    pickVertices = SkinVertices(geometry, palette);
+    const float limit = (std::numeric_limits<float>::max)();
+    boundsMin = { limit, limit, limit };
+    boundsMax = { -limit, -limit, -limit };
+    for (const auto& p : pickVertices) {
+        boundsMin.x = std::min(boundsMin.x, p.x); boundsMax.x = std::max(boundsMax.x, p.x);
+        boundsMin.y = std::min(boundsMin.y, p.y); boundsMax.y = std::max(boundsMax.y, p.y);
+        boundsMin.z = std::min(boundsMin.z, p.z); boundsMax.z = std::max(boundsMax.z, p.z);
+    }
+    pickRevision = paletteRevision;
 }

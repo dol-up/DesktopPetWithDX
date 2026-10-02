@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Asset\Shaders\Skinning.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Asset\Shaders\Shader.hlsl">
@@ -135,31 +136,51 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Core\main.cpp" />
-    <ClCompile Include="Source\Core\SettingsWindow.cpp" />
+    <ClCompile Include="Source\Core\main.cpp"><AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
+    <ClCompile Include="Source\Core\PetBehavior.cpp" />
+    <ClCompile Include="Source\Core\WanderController.cpp" />
+    <ClCompile Include="Source\Core\AutonomousMotion.cpp" />
+    <ClCompile Include="Source\Core\AnimationSettingsStore.cpp" />
+    <ClCompile Include="Source\Core\SettingsWindow.cpp"><AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
     <ClCompile Include="Source\Core\Window.cpp" />
     <ClCompile Include="Source\Graphics\Graphics.cpp" />
     <ClCompile Include="Source\Graphics\Shader.cpp" />
     <ClCompile Include="Source\Interaction\ModelPicker.cpp" />
     <ClCompile Include="Source\Physics\WindowPhysics.cpp" />
+    <ClCompile Include="Source\Physics\GravitySimulation.cpp" />
     <ClCompile Include="Source\Resource\Camera.cpp" />
     <ClCompile Include="Source\Resource\IndexBuffer.cpp" />
     <ClCompile Include="Source\Resource\Model.cpp" />
+    <ClCompile Include="Source\Resource\AnimationClip.cpp" />
+    <ClCompile Include="Source\Resource\Skeleton.cpp" />
+    <ClCompile Include="Source\Resource\Animator.cpp" />
+    <ClCompile Include="Source\Resource\Skinning.cpp" />
     <ClCompile Include="Source\Resource\VertexBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Core\Window.hpp" />
+    <ClInclude Include="Source\Core\PetBehavior.hpp" />
+    <ClInclude Include="Source\Core\WanderController.hpp" />
+    <ClInclude Include="Source\Core\AutonomousMotion.hpp" />
+    <ClInclude Include="Source\Core\AnimationSettingsStore.hpp" />
     <ClInclude Include="Source\Core\SettingsWindow.hpp" />
     <ClInclude Include="Source\Graphics\Graphics.hpp" />
     <ClInclude Include="Source\Graphics\Shader.hpp" />
     <ClInclude Include="Source\Interaction\ModelPicker.hpp" />
     <ClInclude Include="Source\Physics\WindowPhysics.hpp" />
+    <ClInclude Include="Source\Physics\GravitySimulation.hpp" />
     <ClInclude Include="Source\Resource\Camera.hpp" />
     <ClInclude Include="Source\Resource\IndexBuffer.hpp" />
     <ClInclude Include="Source\Resource\Model.hpp" />
+    <ClInclude Include="Source\Resource\AnimationClip.hpp" />
+    <ClInclude Include="Source\Resource\Skeleton.hpp" />
+    <ClInclude Include="Source\Resource\Animator.hpp" />
+    <ClInclude Include="Source\Resource\Skinning.hpp" />
     <ClInclude Include="Source\Resource\Vertex.hpp" />
     <ClInclude Include="Source\Resource\VertexBuffer.hpp" />
   </ItemGroup>
+  <ItemDefinitionGroup><ClCompile><LanguageStandard>stdcpp17</LanguageStandard></ClCompile></ItemDefinitionGroup>
+  <Import Project="ThirdParty\ImGui.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />

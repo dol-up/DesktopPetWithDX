@@ -31,7 +31,7 @@ bool ModelPicker::HitTest(
     const DirectX::XMMATRIX& view,
     const DirectX::XMMATRIX& projection,
     const std::vector<DirectX::XMFLOAT3>& vertices,
-    const std::vector<unsigned short>& indices,
+    const std::vector<std::uint32_t>& indices,
     const DirectX::XMFLOAT3& boundsMin,
     const DirectX::XMFLOAT3& boundsMax) {
 
@@ -67,9 +67,9 @@ bool ModelPicker::HitTest(
     }
 
     for (size_t i = 0; i + 2 < indices.size(); i += 3) {
-        const unsigned short indexA = indices[i];
-        const unsigned short indexB = indices[i + 1];
-        const unsigned short indexC = indices[i + 2];
+        const std::uint32_t indexA = indices[i];
+        const std::uint32_t indexB = indices[i + 1];
+        const std::uint32_t indexC = indices[i + 2];
 
         if (indexA >= vertices.size() || indexB >= vertices.size() || indexC >= vertices.size()) {
             continue;

@@ -1,7 +1,8 @@
 ﻿#include "Window.hpp"
 #include "SettingsWindow.hpp"
+#include "AnimationSettingsStore.hpp"
 #include "Graphics.hpp"
-#include "Physics/WindowPhysics.hpp"
+#include "AutonomousMotion.hpp"
 #include <memory>
 #include <Windows.h>
 #include <commdlg.h>
@@ -9,6 +10,7 @@
 #include <chrono>
 #include <fstream>
 #include <string>
+#include <sstream>
 
 
 std::string OpenFileDialog() {
@@ -28,47 +30,97 @@ std::string OpenFileDialog() {
     return "";
 }
 
-void SaveLastModelPath(const std::string& path) {
+struct LastSession {
+    std::string modelPath;
+    POINT position{};
+    bool hasPosition = false;
+};
+
+void SaveLastSession(const std::string& path, HWND window) {
+    RECT rect{};
+    const bool hasPosition = GetWindowRect(window, &rect) != FALSE;
     std::ofstream ofs("last_model.txt");
     if (ofs.is_open()) {
-        ofs << path;
+        ofs << path << '\n';
+        if (hasPosition) ofs << "position " << rect.left << ' ' << rect.top << '\n';
     }
 }
 
-std::string LoadLastModelPath() {
+LastSession LoadLastSession() {
     std::ifstream ifs("last_model.txt");
-    std::string path;
+    LastSession session;
     if (ifs.is_open()) {
-        std::getline(ifs, path);
+        std::getline(ifs, session.modelPath);
+        std::string positionLine;
+        if (std::getline(ifs, positionLine)) {
+            std::istringstream values(positionLine);
+            std::string tag;
+            LONG x, y;
+            if (values >> tag >> x >> y && tag == "position") {
+                values >> std::ws;
+                if (values.eof()) {
+                    session.position = { x, y };
+                    session.hasPosition = true;
+                }
+            }
+        }
     }
-    return path;
+    return session;
+}
+
+void RestoreLastPosition(HWND window, const LastSession& session) {
+    if (!session.hasPosition) return;
+    RECT windowRect{};
+    if (!GetWindowRect(window, &windowRect)) return;
+    const LONG width = windowRect.right - windowRect.left;
+    const LONG height = windowRect.bottom - windowRect.top;
+    LONG x = session.position.x;
+    LONG y = session.position.y;
+    MONITORINFO monitor{};
+    monitor.cbSize = sizeof(monitor);
+    if (GetMonitorInfoW(MonitorFromPoint(session.position, MONITOR_DEFAULTTONEAREST), &monitor)) {
+        // A pet's transparent window can extend beyond the work area while the
+        // model remains visible. Keep partially visible positions unchanged.
+        const auto right = static_cast<long long>(x) + width;
+        const auto bottom = static_cast<long long>(y) + height;
+        if (right <= monitor.rcWork.left || x >= monitor.rcWork.right ||
+            bottom <= monitor.rcWork.top || y >= monitor.rcWork.bottom) {
+            x = std::max(monitor.rcWork.left, std::min(x, monitor.rcWork.right - width));
+            y = std::max(monitor.rcWork.top, std::min(y, monitor.rcWork.bottom - height));
+        }
+    }
+    SetWindowPos(window, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 // 콘솔의 main() 대신 윈도우 프로그램은 WinMain()을 사용합니다.
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    // WIC embedded textures need COM on the render thread.
+    if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED))) return 1;
+    struct ComScope { ~ComScope() { CoUninitialize(); } } comScope;
 
     bool fixedMode = true;
     bool wasModeKeyPressed = false;
     bool wasModelChangeKeyPressed = false;
     bool wasRotationResetKeyPressed = false;
+    bool wasWanderKeyPressed = false;
     int width = 600;
     int height = 600;
 
     // 1. 투명 윈도우 생성
     Window window(width, height, "DesktopPetWindow");
 
-    std::string modelPath = LoadLastModelPath();
+    const LastSession lastSession = LoadLastSession();
+    std::string modelPath = lastSession.modelPath;
     // 탐색기 띄우기
     if (modelPath.empty()) {
         modelPath = OpenFileDialog();
     }
 
-    // 경로 저장
-    SaveLastModelPath(modelPath);
+    if (modelPath.empty()) return 0;
 
     // 2. 다이렉트X 그래픽스 엔진 생성 (윈도우의 핸들(HWND)을 넘겨줌)
     Graphics gfx(window.GetHWND(), width, height, modelPath);
-    WindowPhysics physics;
+    AutonomousMotion motion;
     window.SetModelHitTest([&gfx](int clientX, int clientY) {
         return gfx.HitTestModel(clientX, clientY);
     });
@@ -76,7 +128,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         gfx.RotateModel(deltaX, deltaY);
     });
 
-    SettingsWindow settingsWindow(window.GetHWND());
+    AnimationSettingsStore animationSettings;
+    std::string settingsLoadError;
+    animationSettings.Load(settingsLoadError);
+    SettingsWindow settingsWindow(window.GetHWND(), gfx, animationSettings, modelPath);
+    if (!settingsLoadError.empty()) settingsWindow.SetStatus("Settings load failed: " + settingsLoadError);
     window.SetSettingsRequested([&settingsWindow]() {
         settingsWindow.Show();
     });
@@ -87,6 +143,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // 윈도우 크기 조절
     SetWindowPos(window.GetHWND(), HWND_TOPMOST, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER);
+    RestoreLastPosition(window.GetHWND(), lastSession);
+    SaveLastSession(modelPath, window.GetHWND());
 
     auto previousFrameTime = std::chrono::steady_clock::now();
 
@@ -99,6 +157,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         deltaTime = std::min(deltaTime, 0.05f);
 
         HWND hWnd = window.GetHWND();
+        const auto keyDown = [hWnd](int key) {
+            return GetForegroundWindow() == hWnd && (GetAsyncKeyState(key) & 0x8000) != 0;
+        };
         RECT rect;
         GetWindowRect(hWnd, &rect);
 
@@ -109,7 +170,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         bool isMoved = false;
         bool isChanged = false;
 
-        bool isModeKeyPressed = (GetAsyncKeyState('K') & 0x8000) && (GetAsyncKeyState('L') & 0x8000);
+        bool isModeKeyPressed = keyDown('K') && keyDown('L');
 
         if (isModeKeyPressed && !wasModeKeyPressed) {
             fixedMode = !fixedMode; // 1번만 뒤집힘
@@ -117,26 +178,34 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         wasModeKeyPressed = isModeKeyPressed;
 
-        const bool isRotationResetKeyPressed = (GetAsyncKeyState('R') & 0x8000) != 0;
+        const bool isRotationResetKeyPressed = keyDown('R');
         if (!fixedMode && isRotationResetKeyPressed && !wasRotationResetKeyPressed) {
             gfx.ResetModelRotation();
+            motion.Reset(gfx.GetAutonomousFacing());
         }
         wasRotationResetKeyPressed = isRotationResetKeyPressed;
 
-        if (!fixedMode) {
-            if (GetAsyncKeyState('W') & 0x8000) { currentY -= speed; isMoved = true; }
-            if (GetAsyncKeyState('S') & 0x8000) { currentY += speed; isMoved = true; }
-            if (GetAsyncKeyState('A') & 0x8000) { currentX -= speed; isMoved = true; }
-            if (GetAsyncKeyState('D') & 0x8000) { currentX += speed; isMoved = true; }
+        // Uses the same model profile and save path as the settings checkbox.
+        const bool isWanderKeyPressed = keyDown('B');
+        if (isWanderKeyPressed && !wasWanderKeyPressed) {
+            settingsWindow.SetAutonomousWalkingEnabled(!gfx.GetBehavior().GetSettings().autonomousWalking);
+        }
+        wasWanderKeyPressed = isWanderKeyPressed;
 
-            if (GetAsyncKeyState('O') & 0x8000) { width += width_diff; height += height_diff; isChanged = true; }
-            if (GetAsyncKeyState('P') & 0x8000) {
+        if (!fixedMode) {
+            if (keyDown('W')) { currentY -= speed; isMoved = true; }
+            if (keyDown('S')) { currentY += speed; isMoved = true; }
+            if (keyDown('A')) { currentX -= speed; isMoved = true; }
+            if (keyDown('D')) { currentX += speed; isMoved = true; }
+
+            if (keyDown('O')) { width += width_diff; height += height_diff; isChanged = true; }
+            if (keyDown('P')) {
                 if (width > 100) { width -= width_diff; height -= height_diff; }
                 isChanged = true;
             }
         }
 
-        bool isModelChangeKeyPressed = (GetAsyncKeyState('M') & 0x8000);
+        bool isModelChangeKeyPressed = keyDown('M');
 
         // 키를 꾹 누르고 있어도 창이 무한으로 뜨지 않게 "방금 막 눌렀을 때"만 실행
         if (isModelChangeKeyPressed && !wasModelChangeKeyPressed) {
@@ -146,11 +215,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             // 2. 유저가 파일을 제대로 골랐다면?
             if (!newPath.empty()) {
-                // 3. 모델 교체 실행!
-                gfx.LoadNewModel(newPath);
-
-                // 4. 다음에 켤 때도 이 모델이 나오게 경로 저장!
-                SaveLastModelPath(newPath);
+                if (!settingsWindow.SaveChanges()) {
+                    settingsWindow.Show();
+                } else {
+                    try {
+                        gfx.LoadNewModel(newPath);
+                        motion.Reset(gfx.GetAutonomousFacing());
+                        modelPath = newPath;
+                        settingsWindow.ModelChanged();
+                        SaveLastSession(modelPath, hWnd);
+                    } catch (const std::exception& error) {
+                        settingsWindow.SetStatus(std::string("Model load failed: ") + error.what());
+                        settingsWindow.Show();
+                    }
+                }
             }
         }
         // 상태 업데이트
@@ -162,13 +240,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             SetWindowPos(hWnd, HWND_TOP, currentX, currentY, width, height, SWP_SHOWWINDOW);
         }
 
-        const bool suspendPhysics = window.IsDragging() || window.IsRotating() || !fixedMode;
-        physics.Update(hWnd, deltaTime, gfx.GetModelBottomInClient(), suspendPhysics);
+        const bool suspendPhysics = window.IsDragging() || window.IsRotating() || !fixedMode || gfx.GetBehavior().IsPreviewing();
+        const auto physicsResult = motion.Update(hWnd, deltaTime, gfx, suspendPhysics, settingsWindow.IsVisible());
+        PetBehaviorInput behaviorInput;
+        behaviorInput.dragging = window.IsDragging();
+        behaviorInput.physicsSuspended = suspendPhysics;
+        behaviorInput.physicsValid = physicsResult.valid;
+        behaviorInput.grounded = physicsResult.grounded;
+        behaviorInput.justLanded = physicsResult.justLanded;
+        behaviorInput.walking = motion.IsWalking();
+        gfx.UpdateBehavior(deltaTime, behaviorInput);
 
         // 매 프레임마다 화면을 지우고 새로 그립니다.
         gfx.Render();
+        settingsWindow.Render();
 
     }
 
+    if (!settingsWindow.SaveChanges())
+        MessageBoxA(window.GetHWND(), "Could not save animation settings. Check write access to animation_settings.txt.", "Desktop Pet", MB_OK | MB_ICONERROR);
+    SaveLastSession(modelPath, window.GetHWND());
     return 0;
 }

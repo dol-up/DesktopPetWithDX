@@ -3,13 +3,16 @@
 #include <d3dcompiler.h> // 셰이더 컴파일을 위해 추가
 #include <algorithm>
 #include <memory>
+#include <cmath>
+#include <limits>
+#include <stdexcept>
 
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
-Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialModelPath)
+Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialModelPath, D3D_DRIVER_TYPE driverType)
     : hWnd(hWnd), renderWidth(width), renderHeight(height) {
     // 디바이스 및 스왑 체인 생성
     DXGI_SWAP_CHAIN_DESC sd = {};
@@ -32,7 +35,7 @@ Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialM
 #endif
 
     D3D11CreateDeviceAndSwapChain(
-        nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
+        nullptr, driverType, nullptr, createDeviceFlags,
         nullptr, 0, D3D11_SDK_VERSION, &sd,
         &swapChain, &device, nullptr, &context
     );
@@ -115,6 +118,14 @@ Graphics::Graphics(HWND hWnd, int width, int height, const std::string& initialM
 
 Graphics::~Graphics() {}
 
+void Graphics::UpdateAnimation(double deltaSeconds) {
+    model->GetAnimator().Update(deltaSeconds);
+}
+
+void Graphics::UpdateBehavior(double deltaSeconds, const PetBehaviorInput& input) {
+    model->GetBehavior().Update(deltaSeconds, input);
+}
+
 void Graphics::Render() {
     const float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
     context->ClearRenderTargetView(renderTargetView.Get(), clearColor);
@@ -149,8 +160,9 @@ void Graphics::Render() {
 }
 
 void Graphics::LoadNewModel(const std::string& filePath) {
-    model.reset();
     model = std::make_unique<Model>(device.Get(), context.Get(), filePath);
+    autonomousYaw = 0;
+    InvalidateGeometryCaches();
 }
 
 bool Graphics::HitTestModel(int clientX, int clientY) const {
@@ -203,25 +215,77 @@ float Graphics::GetModelBottomInClient() const {
         return static_cast<float>(renderHeight);
     }
 
+    if (groundCacheValid && groundClientWidth == clientWidth && groundClientHeight == clientHeight)
+        return groundCachedBottom;
+
     const DirectX::XMMATRIX worldViewProjection =
         GetModelMatrix() * camera->GetViewMatrix() * camera->GetProjectionMatrix();
 
-    float maximumRenderY = 0.0f;
-    for (const DirectX::XMFLOAT3& vertex : model->GetPickVertices()) {
-        const DirectX::XMVECTOR projected = DirectX::XMVector3TransformCoord(
-            DirectX::XMLoadFloat3(&vertex),
-            worldViewProjection);
+    groundCachedBottom = model->GetGroundingBottom(worldViewProjection, static_cast<float>(clientHeight));
+    groundClientWidth = clientWidth;
+    groundClientHeight = clientHeight;
+    groundCacheValid = true;
+    return groundCachedBottom;
+}
 
-        const float normalizedY = DirectX::XMVectorGetY(projected);
-        const float renderY = (1.0f - normalizedY) * 0.5f * renderHeight;
-        maximumRenderY = std::max(maximumRenderY, renderY);
+void Graphics::InvalidateGeometryCaches() {
+    groundCacheValid = false;
+    wanderBoundsCacheValid = false;
+}
+
+ModelScreenBounds Graphics::GetWanderBoundsInClient() const {
+    RECT client{};
+    if (!model || !camera || !GetClientRect(hWnd, &client)) return {};
+    const int width = client.right - client.left, height = client.bottom - client.top;
+    if (width <= 0 || height <= 0) return {};
+    if (wanderBoundsCacheValid && wanderClientWidth == width && wanderClientHeight == height)
+        return wanderCachedBounds;
+
+    using namespace DirectX;
+    // A cylinder around world Y encloses bind geometry for every autonomous yaw.
+    // Its projected box is conservative, stable during turns and independent of
+    // animated arms. Manual rotation/model/size changes invalidate this cache.
+    const auto base = model->GetNormalizationMatrix() * XMMatrixRotationQuaternion(XMLoadFloat4(&modelRotation));
+    float radius = 0, minimumY = std::numeric_limits<float>::max(), maximumY = -minimumY;
+    for (const auto& vertex : model->GetGroundingVertices()) {
+        const auto point = XMVector3TransformCoord(XMLoadFloat3(&vertex), base);
+        const float x = XMVectorGetX(point), y = XMVectorGetY(point), z = XMVectorGetZ(point);
+        if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) return {};
+        radius = std::max(radius, std::sqrt(x * x + z * z));
+        minimumY = std::min(minimumY, y);
+        maximumY = std::max(maximumY, y);
     }
+    if (minimumY > maximumY) return {};
+    const auto viewProjection = camera->GetViewMatrix() * camera->GetProjectionMatrix();
+    float left = std::numeric_limits<float>::max(), right = -left;
+    for (float x : { -radius, radius }) for (float y : { minimumY, maximumY }) for (float z : { -radius, radius }) {
+        const auto clip = XMVector4Transform(XMVectorSet(x, y, z, 1), viewProjection);
+        const float w = XMVectorGetW(clip);
+        if (!std::isfinite(w) || w <= 0) return {};
+        const float screenX = (XMVectorGetX(clip) / w + 1) * 0.5f * width;
+        if (!std::isfinite(screenX)) return {};
+        left = std::min(left, screenX);
+        right = std::max(right, screenX);
+    }
+    wanderCachedBounds = { std::clamp(left, 0.0f, static_cast<float>(width)),
+        std::clamp(right, 0.0f, static_cast<float>(width)), true };
+    wanderClientWidth = width;
+    wanderClientHeight = height;
+    wanderBoundsCacheValid = true;
+    return wanderCachedBounds;
+}
 
-    const float clientBottom = maximumRenderY * clientHeight / renderHeight;
-    return std::max(0.0f, std::min(clientBottom, static_cast<float>(clientHeight)));
+void Graphics::SetAutonomousFacing(double yawRadians) {
+    if (!std::isfinite(yawRadians)) throw std::invalid_argument("Invalid autonomous facing");
+    const double next = std::remainder(yawRadians, 6.28318530717958647692);
+    if (next == autonomousYaw) return;
+    autonomousYaw = next;
+    // The all-yaw horizontal envelope remains valid.
+    groundCacheValid = false;
 }
 
 void Graphics::RotateModel(float deltaX, float deltaY) {
+    InvalidateGeometryCaches();
     constexpr float yawSensitivity = 0.01f;
     constexpr float pitchSensitivity = 0.0075f;
 
@@ -242,7 +306,9 @@ void Graphics::RotateModel(float deltaX, float deltaY) {
 }
 
 void Graphics::ResetModelRotation() {
+    InvalidateGeometryCaches();
     modelRotation = { 0.0f, 0.0f, 0.0f, 1.0f };
+    autonomousYaw = 0;
 }
 
 DirectX::XMMATRIX Graphics::GetModelMatrix() const {
@@ -251,9 +317,9 @@ DirectX::XMMATRIX Graphics::GetModelMatrix() const {
     }
 
     const DirectX::XMMATRIX normalization = model->GetNormalizationMatrix();
-    const DirectX::XMMATRIX baseRotation = DirectX::XMMatrixRotationX(1.5708f);
     const DirectX::XMMATRIX userRotation = DirectX::XMMatrixRotationQuaternion(
         DirectX::XMLoadFloat4(&modelRotation));
 
-    return normalization * baseRotation * userRotation;
+    // Imported node transforms now include the asset's axis conversion.
+    return normalization * userRotation * DirectX::XMMatrixRotationY(static_cast<float>(autonomousYaw));
 }

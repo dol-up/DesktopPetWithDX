@@ -2,6 +2,7 @@
 
 #include <DirectXMath.h>
 #include <vector>
+#include <cstdint>
 
 class ModelPicker {
 public:
@@ -14,7 +15,7 @@ public:
         const DirectX::XMMATRIX& view,
         const DirectX::XMMATRIX& projection,
         const std::vector<DirectX::XMFLOAT3>& vertices,
-        const std::vector<unsigned short>& indices,
+        const std::vector<std::uint32_t>& indices,
         const DirectX::XMFLOAT3& boundsMin,
         const DirectX::XMFLOAT3& boundsMax);
 
